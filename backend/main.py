@@ -22,7 +22,7 @@ try:
     with open(XACTIMATE_CSV, newline="", encoding="utf-8") as csvfile:
         reader = csv.DictReader(csvfile)
         for row in reader:
-            code = row["Code"].strip()
+            code = row["Item"].strip()  # Changed from 'Code' to 'Item'
             xactimate_data[code] = {
                 "description": row["Description"],
                 "unit": row["Unit"],
@@ -31,6 +31,8 @@ try:
     print(f"✅ Loaded {len(xactimate_data)} Xactimate items")
 except FileNotFoundError:
     print(f"❌ CSV file not found: {XACTIMATE_CSV}")
+except KeyError as e:
+    print(f"❌ CSV header mismatch: {e}")
 
 # FastAPI setup
 app = FastAPI()
