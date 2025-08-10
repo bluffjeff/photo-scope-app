@@ -35,10 +35,17 @@ try:
 
         for row in reader:
             code = row[code_col].strip()
+
+            price_str = row[price_col].strip()
+            try:
+                price_val = float(price_str) if price_str else 0.0
+            except ValueError:
+                price_val = 0.0  # fallback if price is non-numeric
+
             xactimate_data[code] = {
                 "description": row[desc_col],
                 "unit": row[unit_col],
-                "price": float(row[price_col])
+                "price": price_val
             }
 
     print(f"✅ Loaded {len(xactimate_data)} Xactimate items")
