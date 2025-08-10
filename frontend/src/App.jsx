@@ -1,150 +1,115 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
+
+const API_URL =
+  import.meta.env.VITE_API_URL ||
+  (window.location.hostname.includes("render.com")
+    ? "https://photo-scope-app-new.onrender.com"
+    : "http://localhost:8000");
 
 function App() {
-  const [selectedFiles, setSelectedFiles] = useState([]);
-  const [filePreviews, setFilePreviews] = useState([]);
-  const [downloadLink, setDownloadLink] = useState(null);
-  const [results, setResults] = useState([]);
+  const [files, setFiles] = useState([]);
+  const [reportData, setReportData] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   const handleFileChange = (e) => {
-    const files = Array.from(e.target.files);
-    setSelectedFiles(files);
-
-    // Create preview URLs
-    const previews = files.map(file => URL.createObjectURL(file));
-    setFilePreviews(previews);
+    setFiles(Array.from(e.target.files));
   };
 
   const handleUpload = async () => {
-    if (selectedFiles.length === 0) {
-      alert("Please select files first");
+    if (files.length === 0) {
+      alert("Please select at least one file.");
       return;
     }
 
     const formData = new FormData();
-    for (let i = 0; i < selectedFiles.length; i++) {
-      formData.append("files", selectedFiles[i]);
-    }
+    files.forEach((file) => {
+      formData.append("files", file);
+    });
 
+    setLoading(true);
     try {
-      const res = await fetch("http://localhost:8000/upload", {
+      const res = await fetch(`${API_URL}/upload`, {
         method: "POST",
-        body: formData
+        body: formData,
       });
-      const data = await res.json();
-      console.log(data);
 
-      if (data.job_id) {
-        setDownloadLink(`http://localhost:8000/download/${data.job_id}`);
-        setResults(data.results || []);
-      }
-    } catch (err) {
-      console.error("Upload failed", err);
+      if (!res.ok) throw new Error("Upload failed");
+
+      const data = await res.json();
+      setReportData(data);
+    } catch (error) {
+      console.error("Error uploading files:", error);
+      alert("Error uploading files");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDownload = async (jobId) => {
+    try {
+      const res = await fetch(`${API_URL}/download/${jobId}`);
+      if (!res.ok) throw new Error("Download failed");
+
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${jobId}_scope_report.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    } catch (error) {
+      console.error("Error downloading report:", error);
+      alert("Error downloading report");
     }
   };
 
   return (
-    <div style={{ padding: "20px", fontFamily: "Arial, sans-serif" }}>
-      <h1>📸 Photo Scope Uploader</h1>
+    <div style={{ padding: "20px", fontFamily: "Arial" }}>
+      <h1>📸 Photo Scope App</h1>
       <input type="file" multiple onChange={handleFileChange} />
-      <button
-        onClick={handleUpload}
-        style={{
-          marginLeft: "10px",
-          padding: "8px 12px",
-          background: "#007bff",
-          color: "white",
-          border: "none",
-          borderRadius: "5px",
-          cursor: "pointer"
-        }}
-      >
-        Upload
+      <br />
+      <button onClick={handleUpload} disabled={loading}>
+        {loading ? "Processing..." : "Upload & Analyze"}
       </button>
 
-      {downloadLink && (
+      {reportData && (
         <div style={{ marginTop: "20px" }}>
-          <a
-            href={downloadLink}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              background: "green",
-              color: "white",
-              padding: "10px 15px",
-              textDecoration: "none",
-              borderRadius: "5px"
-            }}
-          >
-            📄 Download Scope Report
-          </a>
-        </div>
-      )}
+          <h2>Estimate Summary</h2>
+          <p>
+            <strong>Total Estimate:</strong> ${reportData.total_estimate?.toFixed(2)}
+          </p>
+          <button onClick={() => handleDownload(reportData.job_id)}>
+            Download PDF Report
+          </button>
 
-      {results.length > 0 && (
-        <div style={{ marginTop: "30px" }}>
-          <h2>Scope & Line Items Preview</h2>
-          {results.map((res, idx) => (
-            <div
-              key={idx}
-              style={{
-                border: "1px solid #ccc",
-                padding: "15px",
-                marginBottom: "15px",
-                borderRadius: "8px",
-                display: "flex",
-                gap: "15px"
-              }}
-            >
-              {/* Thumbnail preview */}
-              {filePreviews[idx] && (
-                <img
-                  src={filePreviews[idx]}
-                  alt={res.image}
-                  style={{
-                    width: "150px",
-                    height: "150px",
-                    objectFit: "cover",
-                    borderRadius: "8px",
-                    border: "1px solid #ddd"
-                  }}
-                />
-              )}
-
-              {/* Scope & line items */}
-              <div style={{ flex: 1 }}>
-                <h3>{res.image}</h3>
-                <p><strong>Scope:</strong> {res.scope}</p>
-                <table
-                  style={{
-                    width: "100%",
-                    borderCollapse: "collapse",
-                    marginTop: "10px"
-                  }}
-                >
-                  <thead>
-                    <tr>
-                      <th style={{ border: "1px solid #ddd", padding: "8px" }}>Code</th>
-                      <th style={{ border: "1px solid #ddd", padding: "8px" }}>Description</th>
-                      <th style={{ border: "1px solid #ddd", padding: "8px" }}>Qty</th>
-                      <th style={{ border: "1px solid #ddd", padding: "8px" }}>Unit Price</th>
-                      <th style={{ border: "1px solid #ddd", padding: "8px" }}>Total</th>
+          {reportData.results.map((res, idx) => (
+            <div key={idx} style={{ marginTop: "15px", padding: "10px", border: "1px solid #ccc" }}>
+              <h3>{res.image}</h3>
+              <p><strong>Scope:</strong> {res.scope}</p>
+              <table border="1" cellPadding="5" style={{ borderCollapse: "collapse" }}>
+                <thead>
+                  <tr>
+                    <th>Code</th>
+                    <th>Description</th>
+                    <th>Qty</th>
+                    <th>Unit Price</th>
+                    <th>Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {res.line_items.map((item, i) => (
+                    <tr key={i}>
+                      <td>{item.code}</td>
+                      <td>{item.desc}</td>
+                      <td>{item.qty}</td>
+                      <td>${item.price}</td>
+                      <td>${item.total}</td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {res.line_items.map((item, i) => (
-                      <tr key={i}>
-                        <td style={{ border: "1px solid #ddd", padding: "8px" }}>{item.code}</td>
-                        <td style={{ border: "1px solid #ddd", padding: "8px" }}>{item.desc}</td>
-                        <td style={{ border: "1px solid #ddd", padding: "8px" }}>{item.qty}</td>
-                        <td style={{ border: "1px solid #ddd", padding: "8px" }}>${item.price}</td>
-                        <td style={{ border: "1px solid #ddd", padding: "8px" }}>${item.total}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                <p style={{ marginTop: "10px" }}><strong>Subtotal:</strong> ${res.subtotal}</p>
-              </div>
+                  ))}
+                </tbody>
+              </table>
+              <p><strong>Subtotal:</strong> ${res.subtotal?.toFixed(2)}</p>
             </div>
           ))}
         </div>
