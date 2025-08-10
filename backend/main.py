@@ -17,22 +17,30 @@ XACTIMATE_CSV = os.path.join(BASE_DIR, "xactimate_ca.csv")
 client = OpenAI(api_key=OPENAI_API_KEY)
 
 # Load Xactimate CSV into memory
+# Load Xactimate CSV into memory
 xactimate_data = {}
 try:
-    with open(XACTIMATE_CSV, newline="", encoding="utf-8") as csvfile:
+    with open(XACTIMATE_CSV, newline="", encoding="utf-8-sig") as csvfile:
         reader = csv.DictReader(csvfile)
+        
+        # Normalize headers to lowercase without spaces
+        field_map = {name.strip().lower(): name for name in reader.fieldnames}
+
+        code_col = field_map.get("item")
+        desc_col = field_map.get("description")
+        unit_col = field_map.get("unit")
+        price_col = field_map.get("price")
+
+        if not all([code_col, desc_col, unit_col, price_col]):
+            raise KeyError(f"Missing one of required headers: {reader.fieldnames}")
+
         for row in reader:
-            code = row["Item"].strip()  # Changed from 'Code' to 'Item'
+            code = row[code_col].strip()
             xactimate_data[code] = {
-                "description": row["Description"],
-                "unit": row["Unit"],
-                "price": float(row["Price"])
+                "description": row[desc_col],
+                "unit": row[unit_col],
+                "price": float(row[price_col])
             }
-    print(f"✅ Loaded {len(xactimate_data)} Xactimate items")
-except FileNotFoundError:
-    print(f"❌ CSV file not found: {XACTIMATE_CSV}")
-except KeyError as e:
-    print(f"❌ CSV header mismatch: {e}")
 
 # FastAPI setup
 app = FastAPI()
