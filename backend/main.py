@@ -17,12 +17,11 @@ XACTIMATE_CSV = os.path.join(BASE_DIR, "xactimate_ca.csv")
 client = OpenAI(api_key=OPENAI_API_KEY)
 
 # Load Xactimate CSV into memory
-# Load Xactimate CSV into memory
 xactimate_data = {}
 try:
     with open(XACTIMATE_CSV, newline="", encoding="utf-8-sig") as csvfile:
         reader = csv.DictReader(csvfile)
-        
+
         # Normalize headers to lowercase without spaces
         field_map = {name.strip().lower(): name for name in reader.fieldnames}
 
@@ -41,6 +40,13 @@ try:
                 "unit": row[unit_col],
                 "price": float(row[price_col])
             }
+
+    print(f"✅ Loaded {len(xactimate_data)} Xactimate items")
+
+except FileNotFoundError:
+    print(f"❌ CSV file not found: {XACTIMATE_CSV}")
+except KeyError as e:
+    print(f"❌ CSV header mismatch: {e}")
 
 # FastAPI setup
 app = FastAPI()
