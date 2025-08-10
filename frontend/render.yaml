@@ -1,0 +1,6 @@
+services:
+  - type: web
+    name: photo-scope-frontend
+    env: node
+    buildCommand: npm install && npm run build
+    startCommand: npx serve -s dist
