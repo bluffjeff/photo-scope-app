@@ -9,7 +9,10 @@ from fpdf import FPDF
 
 # Environment variables
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-XACTIMATE_CSV = "backend/xactimate_ca.csv"  # Adjust if needed
+
+# Base directory of backend
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+XACTIMATE_CSV = os.path.join(BASE_DIR, "xactimate_ca.csv")
 
 client = OpenAI(api_key=OPENAI_API_KEY)
 
@@ -25,6 +28,7 @@ try:
                 "unit": row["Unit"],
                 "price": float(row["Price"])
             }
+    print(f"✅ Loaded {len(xactimate_data)} Xactimate items")
 except FileNotFoundError:
     print(f"❌ CSV file not found: {XACTIMATE_CSV}")
 
@@ -33,7 +37,7 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Change to frontend URL later for security
+    allow_origins=["*"],  # Change to frontend URL in production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -45,8 +49,7 @@ def home():
 
 async def analyze_damage_with_ai(image_path: str):
     """
-    Sends the uploaded image to GPT-4o-mini with instructions
-    to return JSON containing scope items and matched Xactimate codes.
+    Sends the uploaded image to GPT-4o-mini for damage assessment.
     """
     with open(image_path, "rb") as img_file:
         response = client.chat.completions.create(
@@ -61,19 +64,16 @@ async def analyze_damage_with_ai(image_path: str):
             temperature=0
         )
 
-    # Extract the text content from the response
     ai_text = response.choices[0].message.content
-
-    # In production: parse and validate JSON
-    # For now, we'll return the raw AI text
     return ai_text
 
 def generate_pdf_report(job_id: str, ai_result: str):
     """
-    Creates a simple PDF report from the AI analysis result.
+    Creates a PDF report from AI analysis result.
     """
-    pdf_path = f"backend/reports/{job_id}_scope_report.pdf"
-    os.makedirs(os.path.dirname(pdf_path), exist_ok=True)
+    pdf_dir = os.path.join(BASE_DIR, "reports")
+    os.makedirs(pdf_dir, exist_ok=True)
+    pdf_path = os.path.join(pdf_dir, f"{job_id}_scope_report.pdf")
 
     pdf = FPDF()
     pdf.add_page()
@@ -89,7 +89,7 @@ def generate_pdf_report(job_id: str, ai_result: str):
 @app.post("/upload")
 async def upload_files(file: UploadFile = File(...)):
     job_id = str(uuid.uuid4())
-    upload_dir = "backend/uploads"
+    upload_dir = os.path.join(BASE_DIR, "uploads")
     os.makedirs(upload_dir, exist_ok=True)
 
     file_path = os.path.join(upload_dir, file.filename)
@@ -103,14 +103,14 @@ async def upload_files(file: UploadFile = File(...)):
 
 @app.get("/download/{job_id}")
 async def download_report(job_id: str):
-    pdf_path = f"backend/reports/{job_id}_scope_report.pdf"
+    pdf_path = os.path.join(BASE_DIR, "reports", f"{job_id}_scope_report.pdf")
     if not os.path.exists(pdf_path):
         return {"error": "Report not found"}
     return FileResponse(pdf_path, filename=f"{job_id}_scope_report.pdf")
 
 @app.get("/download-json/{job_id}")
 async def download_json(job_id: str):
-    json_path = f"backend/reports/{job_id}_scope_report.json"
+    json_path = os.path.join(BASE_DIR, "reports", f"{job_id}_scope_report.json")
     if not os.path.exists(json_path):
         return {"error": "JSON report not found"}
     return FileResponse(json_path, filename=f"{job_id}_scope_report.json")
