@@ -1,6 +1,7 @@
 import os
 import uuid
 import csv
+import base64
 from fastapi import FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
@@ -72,23 +73,43 @@ def home():
 
 async def analyze_damage_with_ai(image_path: str):
     """
-    Sends the uploaded image to GPT-4o-mini for damage assessment.
+    Sends the uploaded image to GPT-4o-mini for damage assessment with image input.
     """
     with open(image_path, "rb") as img_file:
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": "You are an insurance damage assessment AI."},
-                {"role": "user", "content": "Analyze the uploaded image for visible property damage. "
-                                             "Return a JSON array where each element contains: "
-                                             "code, description, quantity, and estimated total cost "
-                                             "using California Xactimate pricing where possible."}
-            ],
-            temperature=0
-        )
+        base64_image = base64.b64encode(img_file.read()).decode("utf-8")
 
-    ai_text = response.choices[0].message.content
-    return ai_text
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {
+                "role": "system",
+                "content": "You are an insurance damage assessment AI. Analyze uploaded property damage images."
+            },
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": (
+                            "Analyze this image for visible property damage. "
+                            "Return a JSON array where each element contains: "
+                            "code, description, quantity, and estimated total cost "
+                            "using California Xactimate pricing where possible."
+                        )
+                    },
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": f"data:image/jpeg;base64,{base64_image}"
+                        }
+                    }
+                ]
+            }
+        ],
+        temperature=0
+    )
+
+    return response.choices[0].message.content
 
 def generate_pdf_report(job_id: str, ai_result: str):
     """
