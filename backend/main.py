@@ -1,179 +1,116 @@
 import os
 import uuid
-import base64
 import csv
-import json
 from fastapi import FastAPI, File, UploadFile
-from fastapi.responses import FileResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-from reportlab.lib.pagesizes import letter
-from reportlab.pdfgen import canvas
-import openai
+from fastapi.responses import FileResponse
+from openai import OpenAI
+from fpdf import FPDF
 
-# Load API key
-openai.api_key = os.getenv("OPENAI_API_KEY")
+# Environment variables
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+XACTIMATE_CSV = "backend/xactimate_ca.csv"  # Adjust if needed
 
+client = OpenAI(api_key=OPENAI_API_KEY)
+
+# Load Xactimate CSV into memory
+xactimate_data = {}
+try:
+    with open(XACTIMATE_CSV, newline="", encoding="utf-8") as csvfile:
+        reader = csv.DictReader(csvfile)
+        for row in reader:
+            code = row["Code"].strip()
+            xactimate_data[code] = {
+                "description": row["Description"],
+                "unit": row["Unit"],
+                "price": float(row["Price"])
+            }
+except FileNotFoundError:
+    print(f"❌ CSV file not found: {XACTIMATE_CSV}")
+
+# FastAPI setup
 app = FastAPI()
 
-# Enable CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, replace with your frontend Render URL
+    allow_origins=["*"],  # Change to frontend URL later for security
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-REPORTS_DIR = "reports"
-os.makedirs(REPORTS_DIR, exist_ok=True)
-
-# Load Xactimate pricing CSV
-XACTIMATE_CSV = "xactimate_ca.csv"
-xactimate_data = {}
-if os.path.exists(XACTIMATE_CSV):
-    with open(XACTIMATE_CSV, newline="", encoding="utf-8") as csvfile:
-        reader = csv.DictReader(csvfile)
-        for row in reader:
-            code = row["code"].strip().upper()
-            xactimate_data[code] = {
-                "desc": row["desc"].strip(),
-                "price": float(row["price"])
-            }
-
 @app.get("/")
 def home():
-    return {"message": "Photo Scope API is running"}
+    return {"message": "Photo Scope API is running 🚀"}
 
 async def analyze_damage_with_ai(image_path: str):
-    """Analyze photo with OpenAI Vision and map results to Xactimate CSV pricing."""
-    with open(image_path, "rb") as img_file:
-        img_bytes = img_file.read()
-    img_base64 = base64.b64encode(img_bytes).decode("utf-8")
-
-    prompt = """
-    You are an insurance restoration estimator specializing in Xactimate estimates for property damage in Sunnyvale & Palo Alto, California.
-
-    Analyze the attached photo and:
-    1. Identify the damage type (water, fire, mold, smoke, structural, etc.).
-    2. Provide a short "Scope of Work" summary.
-    3. Suggest 2-5 relevant Xactimate line item CODES (exact official codes when possible).
-    4. If a code is unknown, use "UNKNOWN" but keep a clear description.
-    5. Do NOT include pricing — we will handle pricing separately.
-    6. Return strictly valid JSON only in this exact format:
-
-    {
-      "scope": "string",
-      "line_items": [
-        { "code": "string", "desc": "string", "qty": number }
-      ]
-    }
-
-    ❗ Do NOT include any text outside the JSON.
     """
+    Sends the uploaded image to GPT-4o-mini with instructions
+    to return JSON containing scope items and matched Xactimate codes.
+    """
+    with open(image_path, "rb") as img_file:
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": "You are an insurance damage assessment AI."},
+                {"role": "user", "content": "Analyze the uploaded image for visible property damage. "
+                                             "Return a JSON array where each element contains: "
+                                             "code, description, quantity, and estimated total cost "
+                                             "using California Xactimate pricing where possible."}
+            ],
+            temperature=0
+        )
 
-    response = openai.ChatCompletion.create(
-        model="gpt-4o-mini",
-        messages=[
-            {"role": "system", "content": "You are a restoration estimator assistant."},
-            {
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": prompt},
-                    {"type": "image_url", "image_url": f"data:image/jpeg;base64,{img_base64}"}
-                ]
-            }
-        ],
-        temperature=0
-    )
+    # Extract the text content from the response
+    ai_text = response.choices[0].message.content
 
-    try:
-        ai_text = response.choices[0].message["content"].strip()
-        parsed = json.loads(ai_text)
-    except json.JSONDecodeError:
-        return {
-            "scope": "Unable to determine damage",
-            "line_items": []
-        }
+    # In production: parse and validate JSON
+    # For now, we'll return the raw AI text
+    return ai_text
 
-    # Map pricing from CSV
-    for item in parsed.get("line_items", []):
-        code = item["code"].upper()
-        if code in xactimate_data:
-            item["desc"] = xactimate_data[code]["desc"]
-            item["price"] = xactimate_data[code]["price"]
-        else:
-            item["price"] = 0.0
-        item["total"] = round(item["qty"] * item["price"], 2)
+def generate_pdf_report(job_id: str, ai_result: str):
+    """
+    Creates a simple PDF report from the AI analysis result.
+    """
+    pdf_path = f"backend/reports/{job_id}_scope_report.pdf"
+    os.makedirs(os.path.dirname(pdf_path), exist_ok=True)
 
-    return parsed
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", size=14)
+    pdf.cell(200, 10, txt="Scope of Work & Estimate", ln=True, align='C')
+    pdf.ln(10)
+    pdf.set_font("Arial", size=12)
+    pdf.multi_cell(0, 8, ai_result)
+
+    pdf.output(pdf_path)
+    return pdf_path
 
 @app.post("/upload")
-async def upload_files(files: list[UploadFile] = File(...)):
+async def upload_files(file: UploadFile = File(...)):
     job_id = str(uuid.uuid4())
-    results = []
-    total_estimate = 0
+    upload_dir = "backend/uploads"
+    os.makedirs(upload_dir, exist_ok=True)
 
-    for file in files:
-        file_path = f"temp_{file.filename}"
-        with open(file_path, "wb") as f:
-            f.write(await file.read())
+    file_path = os.path.join(upload_dir, file.filename)
+    with open(file_path, "wb") as buffer:
+        buffer.write(await file.read())
 
-        ai_result = await analyze_damage_with_ai(file_path)
-        subtotal = sum(item["total"] for item in ai_result.get("line_items", []))
-        total_estimate += subtotal
+    ai_result = await analyze_damage_with_ai(file_path)
+    pdf_path = generate_pdf_report(job_id, ai_result)
 
-        results.append({
-            "image": file.filename,
-            "scope": ai_result.get("scope"),
-            "line_items": ai_result.get("line_items", []),
-            "subtotal": subtotal
-        })
-
-        os.remove(file_path)
-
-    # Save PDF
-    pdf_path = os.path.join(REPORTS_DIR, f"{job_id}_scope_report.pdf")
-    c = canvas.Canvas(pdf_path, pagesize=letter)
-    c.drawString(100, 750, f"Scope of Work Report - Job ID: {job_id}")
-    y = 720
-    for res in results:
-        c.drawString(100, y, f"Image: {res['image']}")
-        y -= 20
-        c.drawString(100, y, f"Scope: {res['scope']}")
-        y -= 20
-        for item in res["line_items"]:
-            c.drawString(120, y, f"{item['code']} - {item['desc']} - Qty: {item['qty']} - Unit: ${item['price']} - Total: ${item['total']}")
-            y -= 15
-        c.drawString(100, y, f"Subtotal: ${res['subtotal']}")
-        y -= 30
-    c.drawString(100, y, f"Total Estimate: ${total_estimate}")
-    c.save()
-
-    # Save raw JSON
-    json_path = os.path.join(REPORTS_DIR, f"{job_id}_scope_data.json")
-    with open(json_path, "w", encoding="utf-8") as jf:
-        json.dump({
-            "job_id": job_id,
-            "results": results,
-            "total_estimate": total_estimate
-        }, jf, indent=2)
-
-    return JSONResponse({
-        "job_id": job_id,
-        "results": results,
-        "total_estimate": total_estimate
-    })
+    return {"job_id": job_id, "pdf_url": f"/download/{job_id}"}
 
 @app.get("/download/{job_id}")
 async def download_report(job_id: str):
-    pdf_path = os.path.join(REPORTS_DIR, f"{job_id}_scope_report.pdf")
+    pdf_path = f"backend/reports/{job_id}_scope_report.pdf"
     if not os.path.exists(pdf_path):
-        return JSONResponse({"error": "Report not found"}, status_code=404)
+        return {"error": "Report not found"}
     return FileResponse(pdf_path, filename=f"{job_id}_scope_report.pdf")
 
 @app.get("/download-json/{job_id}")
 async def download_json(job_id: str):
-    json_path = os.path.join(REPORTS_DIR, f"{job_id}_scope_data.json")
+    json_path = f"backend/reports/{job_id}_scope_report.json"
     if not os.path.exists(json_path):
-        return JSONResponse({"error": "Data not found"}, status_code=404)
-    return FileResponse(json_path, filename=f"{job_id}_scope_data.json")
+        return {"error": "JSON report not found"}
+    return FileResponse(json_path, filename=f"{job_id}_scope_report.json")
