@@ -1,6 +1,589 @@
 code,desc,price
-DRY123,Drywall replacement per sq ft,50
-PAINT45,Repainting walls per room,300
-CARP101,Carpet replacement per sq yd,25
-MOLD200,Mold remediation per sq ft,75
-WTR300,Water extraction per hour,120
+DRY001,Drywall installation per sq ft,51.3
+DRY002,Drywall removal per sq ft - premium quality,32.72
+DRY003,Drywall patch repair per sq ft,51.42
+DRY004,Drywall installation per sq ft - economy grade,54.07
+DRY005,Drywall patch repair per sq ft,56.74
+DRY006,Drywall installation per sq ft,54.98
+DRY007,Drywall removal per sq ft - premium quality,35.72
+DRY008,Drywall installation per sq ft - economy grade,49.9
+DRY009,Drywall removal per sq ft,33.98
+DRY010,Drywall patch repair per sq ft,52.91
+DRY011,Drywall removal per sq ft,39.98
+DRY012,Drywall installation per sq ft,46.23
+DRY013,Drywall patch repair per sq ft - economy grade,55.46
+DRY014,Drywall removal per sq ft - premium quality,34.48
+DRY015,Drywall removal per sq ft,35.25
+DRY016,Drywall patch repair per sq ft,55.95
+DRY017,Drywall installation per sq ft - economy grade,46.28
+DRY018,Drywall installation per sq ft - economy grade,53.52
+DRY019,Drywall removal per sq ft,35.96
+DRY020,Drywall installation per sq ft,48.3
+DRY021,Drywall installation per sq ft - economy grade,54.0
+DRY022,Drywall installation per sq ft - economy grade,50.58
+DRY023,Drywall removal per sq ft,32.56
+DRY024,Drywall installation per sq ft,52.56
+DRY025,Drywall patch repair per sq ft,50.19
+DRY026,Drywall installation per sq ft - economy grade,54.59
+DRY027,Drywall patch repair per sq ft - premium quality,55.86
+DRY028,Drywall installation per sq ft,54.88
+DRY029,Drywall patch repair per sq ft,52.46
+DRY030,Drywall patch repair per sq ft - economy grade,50.14
+DRY031,Drywall patch repair per sq ft,57.23
+DRY032,Drywall installation per sq ft,45.91
+DRY033,Drywall removal per sq ft - economy grade,32.78
+DRY034,Drywall removal per sq ft - economy grade,39.23
+DRY035,Drywall patch repair per sq ft - premium quality,59.94
+DRY036,Drywall installation per sq ft - premium quality,51.17
+DRY037,Drywall patch repair per sq ft,55.38
+DRY038,Drywall installation per sq ft - premium quality,47.22
+DRY039,Drywall removal per sq ft - economy grade,36.06
+DRY040,Drywall patch repair per sq ft,53.03
+DRY041,Drywall removal per sq ft,30.29
+DRY042,Drywall installation per sq ft - premium quality,53.11
+DRY043,Drywall installation per sq ft,52.74
+DRY044,Drywall patch repair per sq ft - premium quality,52.79
+DRY045,Drywall installation per sq ft - premium quality,50.03
+DRY046,Drywall patch repair per sq ft,56.25
+DRY047,Drywall installation per sq ft - premium quality,53.1
+DRY048,Drywall patch repair per sq ft,52.38
+DRY049,Drywall installation per sq ft - economy grade,54.05
+PAINT001,Interior wall painting per sq ft - premium quality,1.39
+PAINT002,Trim painting per linear ft - premium quality,2.22
+PAINT003,Interior wall painting per sq ft - premium quality,1.4
+PAINT004,Trim painting per linear ft,2.48
+PAINT005,Ceiling painting per sq ft - premium quality,1.73
+PAINT006,Interior wall painting per sq ft - economy grade,1.44
+PAINT007,Trim painting per linear ft,2.03
+PAINT008,Trim painting per linear ft - premium quality,2.29
+PAINT009,Interior wall painting per sq ft,1.39
+PAINT010,Ceiling painting per sq ft - premium quality,2.07
+PAINT011,Trim painting per linear ft - premium quality,2.32
+PAINT012,Interior wall painting per sq ft - premium quality,1.35
+PAINT013,Interior wall painting per sq ft - premium quality,1.37
+PAINT014,Interior wall painting per sq ft,1.77
+PAINT015,Interior wall painting per sq ft,1.71
+PAINT016,Interior wall painting per sq ft,1.76
+PAINT017,Ceiling painting per sq ft,2.09
+PAINT018,Trim painting per linear ft,2.47
+PAINT019,Interior wall painting per sq ft - economy grade,1.32
+PAINT020,Ceiling painting per sq ft,1.89
+PAINT021,Ceiling painting per sq ft,2.05
+PAINT022,Trim painting per linear ft - economy grade,2.49
+PAINT023,Trim painting per linear ft - premium quality,2.05
+PAINT024,Trim painting per linear ft - premium quality,2.04
+PAINT025,Interior wall painting per sq ft - economy grade,1.45
+PAINT026,Trim painting per linear ft,2.37
+PAINT027,Trim painting per linear ft,2.01
+PAINT028,Trim painting per linear ft,2.02
+PAINT029,Ceiling painting per sq ft - economy grade,1.81
+PAINT030,Interior wall painting per sq ft,1.71
+PAINT031,Trim painting per linear ft,2.25
+PAINT032,Interior wall painting per sq ft,1.6
+PAINT033,Interior wall painting per sq ft,1.52
+PAINT034,Ceiling painting per sq ft,2.03
+PAINT035,Interior wall painting per sq ft - economy grade,1.71
+PAINT036,Trim painting per linear ft,2.17
+PAINT037,Trim painting per linear ft - premium quality,2.37
+PAINT038,Trim painting per linear ft,2.14
+PAINT039,Trim painting per linear ft - premium quality,2.49
+PAINT040,Interior wall painting per sq ft - economy grade,1.58
+PAINT041,Trim painting per linear ft - premium quality,2.3
+PAINT042,Ceiling painting per sq ft - economy grade,1.79
+PAINT043,Trim painting per linear ft - economy grade,2.22
+PAINT044,Trim painting per linear ft - economy grade,2.42
+PAINT045,Trim painting per linear ft,2.36
+PAINT046,Trim painting per linear ft,2.41
+PAINT047,Ceiling painting per sq ft - premium quality,2.13
+PAINT048,Interior wall painting per sq ft,1.58
+PAINT049,Interior wall painting per sq ft,1.8
+FLOOR001,Laminate flooring replacement per sq ft - economy grade,13.05
+FLOOR002,Hardwood floor replacement per sq ft - economy grade,17.48
+FLOOR003,Hardwood floor replacement per sq ft - economy grade,14.65
+FLOOR004,Laminate flooring replacement per sq ft,11.53
+FLOOR005,Hardwood floor replacement per sq ft,16.81
+FLOOR006,Ceramic tile flooring per sq ft - economy grade,15.31
+FLOOR007,Carpet replacement per sq yd,27.87
+FLOOR008,Ceramic tile flooring per sq ft,15.1
+FLOOR009,Ceramic tile flooring per sq ft,15.32
+FLOOR010,Ceramic tile flooring per sq ft,15.12
+FLOOR011,Laminate flooring replacement per sq ft - economy grade,13.29
+FLOOR012,Hardwood floor replacement per sq ft - premium quality,14.27
+FLOOR013,Hardwood floor replacement per sq ft - premium quality,16.67
+FLOOR014,Laminate flooring replacement per sq ft,13.26
+FLOOR015,Laminate flooring replacement per sq ft,13.16
+FLOOR016,Laminate flooring replacement per sq ft,12.01
+FLOOR017,Carpet replacement per sq yd - premium quality,27.43
+FLOOR018,Ceramic tile flooring per sq ft - premium quality,14.67
+FLOOR019,Carpet replacement per sq yd - economy grade,28.86
+FLOOR020,Hardwood floor replacement per sq ft - economy grade,14.44
+FLOOR021,Carpet replacement per sq yd,26.65
+FLOOR022,Ceramic tile flooring per sq ft,15.52
+FLOOR023,Carpet replacement per sq yd,26.05
+FLOOR024,Hardwood floor replacement per sq ft,16.19
+FLOOR025,Laminate flooring replacement per sq ft - economy grade,13.88
+FLOOR026,Carpet replacement per sq yd - premium quality,26.88
+FLOOR027,Laminate flooring replacement per sq ft - economy grade,11.45
+FLOOR028,Ceramic tile flooring per sq ft,13.5
+FLOOR029,Ceramic tile flooring per sq ft - premium quality,15.62
+FLOOR030,Hardwood floor replacement per sq ft,16.02
+FLOOR031,Carpet replacement per sq yd,29.55
+FLOOR032,Carpet replacement per sq yd,26.2
+FLOOR033,Hardwood floor replacement per sq ft,16.32
+FLOOR034,Carpet replacement per sq yd - economy grade,28.45
+FLOOR035,Ceramic tile flooring per sq ft,13.53
+FLOOR036,Ceramic tile flooring per sq ft - economy grade,13.96
+FLOOR037,Laminate flooring replacement per sq ft - premium quality,12.84
+FLOOR038,Hardwood floor replacement per sq ft - economy grade,16.1
+FLOOR039,Hardwood floor replacement per sq ft,17.45
+FLOOR040,Ceramic tile flooring per sq ft,14.1
+FLOOR041,Carpet replacement per sq yd,30.0
+FLOOR042,Carpet replacement per sq yd,28.94
+FLOOR043,Carpet replacement per sq yd,28.58
+FLOOR044,Ceramic tile flooring per sq ft - economy grade,15.2
+FLOOR045,Laminate flooring replacement per sq ft,11.31
+FLOOR046,Carpet replacement per sq yd - economy grade,25.19
+FLOOR047,Ceramic tile flooring per sq ft,14.21
+FLOOR048,Laminate flooring replacement per sq ft - premium quality,11.86
+FLOOR049,Laminate flooring replacement per sq ft - premium quality,13.07
+WTR001,Dehumidifier rental per day - economy grade,39.41
+WTR002,Water extraction per hour - economy grade,122.48
+WTR003,Air mover rental per day,25.95
+WTR004,Air mover rental per day,28.4
+WTR005,Dehumidifier rental per day - economy grade,40.3
+WTR006,Water extraction per hour - premium quality,122.47
+WTR007,Air mover rental per day - economy grade,21.37
+WTR008,Dehumidifier rental per day,38.65
+WTR009,Dehumidifier rental per day,35.06
+WTR010,Water extraction per hour - premium quality,128.65
+WTR011,Air mover rental per day - premium quality,25.47
+WTR012,Dehumidifier rental per day - premium quality,39.91
+WTR013,Water extraction per hour,117.18
+WTR014,Air mover rental per day - premium quality,23.97
+WTR015,Dehumidifier rental per day - economy grade,36.14
+WTR016,Water extraction per hour,115.05
+WTR017,Air mover rental per day,23.2
+WTR018,Water extraction per hour,116.92
+WTR019,Air mover rental per day - economy grade,25.11
+WTR020,Dehumidifier rental per day - premium quality,35.96
+WTR021,Air mover rental per day - premium quality,29.86
+WTR022,Air mover rental per day,25.73
+WTR023,Water extraction per hour,115.22
+WTR024,Dehumidifier rental per day,43.09
+WTR025,Dehumidifier rental per day,35.46
+WTR026,Water extraction per hour - economy grade,115.21
+WTR027,Air mover rental per day - premium quality,28.86
+WTR028,Water extraction per hour - premium quality,122.82
+WTR029,Air mover rental per day - economy grade,21.59
+WTR030,Dehumidifier rental per day,36.99
+WTR031,Water extraction per hour - economy grade,127.04
+WTR032,Dehumidifier rental per day - economy grade,40.07
+WTR033,Water extraction per hour,128.75
+WTR034,Water extraction per hour - premium quality,129.14
+WTR035,Air mover rental per day,25.12
+WTR036,Air mover rental per day - economy grade,25.5
+WTR037,Water extraction per hour,118.45
+WTR038,Air mover rental per day - economy grade,26.02
+WTR039,Air mover rental per day,23.47
+WTR040,Water extraction per hour - economy grade,129.79
+WTR041,Dehumidifier rental per day,40.64
+WTR042,Air mover rental per day - premium quality,23.69
+WTR043,Water extraction per hour,123.22
+WTR044,Air mover rental per day,20.85
+WTR045,Air mover rental per day,27.02
+WTR046,Air mover rental per day - economy grade,26.37
+WTR047,Water extraction per hour,121.65
+WTR048,Water extraction per hour - economy grade,119.34
+WTR049,Water extraction per hour - economy grade,128.52
+MOLD001,Mold remediation per sq ft,75.38
+MOLD002,Mold remediation per sq ft,75.91
+MOLD003,Mold remediation per sq ft,81.33
+MOLD004,Mold remediation per sq ft,79.48
+MOLD005,Mold remediation per sq ft - economy grade,76.52
+MOLD006,Mold remediation per sq ft - economy grade,80.02
+MOLD007,Mold remediation per sq ft - economy grade,78.05
+MOLD008,Mold remediation per sq ft - premium quality,81.2
+MOLD009,Mold sealing/encapsulation per sq ft,62.55
+MOLD010,Mold sealing/encapsulation per sq ft - premium quality,65.16
+MOLD011,Mold sealing/encapsulation per sq ft,69.97
+MOLD012,Mold remediation per sq ft - economy grade,84.17
+MOLD013,Mold sealing/encapsulation per sq ft,60.91
+MOLD014,Mold remediation per sq ft - economy grade,76.67
+MOLD015,Mold sealing/encapsulation per sq ft,68.79
+MOLD016,Mold sealing/encapsulation per sq ft - premium quality,65.59
+MOLD017,Mold sealing/encapsulation per sq ft - economy grade,65.96
+MOLD018,Mold sealing/encapsulation per sq ft,67.52
+MOLD019,Mold remediation per sq ft,84.84
+MOLD020,Mold sealing/encapsulation per sq ft - economy grade,65.36
+MOLD021,Mold sealing/encapsulation per sq ft,64.92
+MOLD022,Mold remediation per sq ft,79.89
+MOLD023,Mold remediation per sq ft,82.23
+MOLD024,Mold remediation per sq ft - economy grade,81.54
+MOLD025,Mold sealing/encapsulation per sq ft - premium quality,66.46
+MOLD026,Mold remediation per sq ft - economy grade,83.37
+MOLD027,Mold sealing/encapsulation per sq ft - economy grade,68.23
+MOLD028,Mold remediation per sq ft,83.41
+MOLD029,Mold remediation per sq ft - premium quality,79.91
+MOLD030,Mold sealing/encapsulation per sq ft - premium quality,67.79
+MOLD031,Mold remediation per sq ft,81.67
+MOLD032,Mold sealing/encapsulation per sq ft - economy grade,66.8
+MOLD033,Mold sealing/encapsulation per sq ft - premium quality,68.73
+MOLD034,Mold sealing/encapsulation per sq ft,66.12
+MOLD035,Mold sealing/encapsulation per sq ft,67.6
+MOLD036,Mold sealing/encapsulation per sq ft,65.4
+MOLD037,Mold sealing/encapsulation per sq ft,69.0
+MOLD038,Mold sealing/encapsulation per sq ft - economy grade,69.69
+MOLD039,Mold sealing/encapsulation per sq ft - economy grade,68.26
+MOLD040,Mold sealing/encapsulation per sq ft - economy grade,62.52
+MOLD041,Mold sealing/encapsulation per sq ft,65.8
+MOLD042,Mold sealing/encapsulation per sq ft - premium quality,66.65
+MOLD043,Mold remediation per sq ft,79.98
+MOLD044,Mold remediation per sq ft - economy grade,76.23
+MOLD045,Mold remediation per sq ft - premium quality,78.25
+MOLD046,Mold remediation per sq ft,82.1
+MOLD047,Mold remediation per sq ft,82.27
+MOLD048,Mold sealing/encapsulation per sq ft - premium quality,69.32
+MOLD049,Mold remediation per sq ft,83.83
+FIRE001,Smoke odor removal per sq ft,3.42
+FIRE002,Smoke odor removal per sq ft,2.78
+FIRE003,Smoke odor removal per sq ft,3.32
+FIRE004,Smoke odor removal per sq ft - economy grade,2.83
+FIRE005,Smoke odor removal per sq ft,3.01
+FIRE006,Smoke odor removal per sq ft - premium quality,2.86
+FIRE007,Smoke odor removal per sq ft - economy grade,3.48
+FIRE008,Smoke odor removal per sq ft - premium quality,3.1
+FIRE009,Soot cleaning per sq ft - economy grade,4.07
+FIRE010,Soot cleaning per sq ft,3.84
+FIRE011,Soot cleaning per sq ft,4.06
+FIRE012,Soot cleaning per sq ft - economy grade,4.02
+FIRE013,Soot cleaning per sq ft,4.13
+FIRE014,Soot cleaning per sq ft - economy grade,3.86
+FIRE015,Soot cleaning per sq ft,3.69
+FIRE016,Smoke odor removal per sq ft,2.55
+FIRE017,Soot cleaning per sq ft - economy grade,4.22
+FIRE018,Smoke odor removal per sq ft,3.17
+FIRE019,Soot cleaning per sq ft,3.85
+FIRE020,Soot cleaning per sq ft,4.15
+FIRE021,Soot cleaning per sq ft - economy grade,4.32
+FIRE022,Soot cleaning per sq ft,4.22
+FIRE023,Soot cleaning per sq ft,4.24
+FIRE024,Soot cleaning per sq ft - economy grade,3.92
+FIRE025,Soot cleaning per sq ft,4.41
+FIRE026,Smoke odor removal per sq ft,2.78
+FIRE027,Smoke odor removal per sq ft,3.36
+FIRE028,Smoke odor removal per sq ft,2.94
+FIRE029,Smoke odor removal per sq ft,2.65
+FIRE030,Smoke odor removal per sq ft - economy grade,3.3
+FIRE031,Smoke odor removal per sq ft - economy grade,3.23
+FIRE032,Smoke odor removal per sq ft - premium quality,2.57
+FIRE033,Soot cleaning per sq ft - economy grade,4.26
+FIRE034,Soot cleaning per sq ft - economy grade,4.38
+FIRE035,Soot cleaning per sq ft - premium quality,3.57
+FIRE036,Soot cleaning per sq ft - economy grade,4.25
+FIRE037,Soot cleaning per sq ft - premium quality,3.85
+FIRE038,Smoke odor removal per sq ft,2.98
+FIRE039,Smoke odor removal per sq ft,3.43
+FIRE040,Soot cleaning per sq ft - economy grade,4.19
+FIRE041,Soot cleaning per sq ft - economy grade,3.65
+FIRE042,Smoke odor removal per sq ft - economy grade,2.81
+FIRE043,Smoke odor removal per sq ft,2.81
+FIRE044,Smoke odor removal per sq ft - economy grade,2.72
+FIRE045,Soot cleaning per sq ft - economy grade,4.42
+FIRE046,Smoke odor removal per sq ft - economy grade,2.89
+FIRE047,Smoke odor removal per sq ft,3.16
+FIRE048,Soot cleaning per sq ft - premium quality,4.42
+FIRE049,Smoke odor removal per sq ft,2.98
+ROOF001,Roof sheathing replacement per sq ft - economy grade,3.06
+ROOF002,Asphalt shingle replacement per sq ft,4.55
+ROOF003,Asphalt shingle replacement per sq ft - economy grade,4.53
+ROOF004,Asphalt shingle replacement per sq ft,4.31
+ROOF005,Tile roof replacement per sq ft - premium quality,8.44
+ROOF006,Tile roof replacement per sq ft - economy grade,8.32
+ROOF007,Roof sheathing replacement per sq ft - economy grade,3.36
+ROOF008,Asphalt shingle replacement per sq ft - premium quality,4.25
+ROOF009,Asphalt shingle replacement per sq ft - economy grade,4.82
+ROOF010,Asphalt shingle replacement per sq ft - premium quality,4.39
+ROOF011,Roof sheathing replacement per sq ft,3.2
+ROOF012,Roof sheathing replacement per sq ft,3.15
+ROOF013,Roof sheathing replacement per sq ft,3.37
+ROOF014,Roof sheathing replacement per sq ft - premium quality,3.14
+ROOF015,Roof sheathing replacement per sq ft - premium quality,3.11
+ROOF016,Tile roof replacement per sq ft - premium quality,8.47
+ROOF017,Asphalt shingle replacement per sq ft,4.32
+ROOF018,Roof sheathing replacement per sq ft - economy grade,3.3
+ROOF019,Asphalt shingle replacement per sq ft - premium quality,4.17
+ROOF020,Roof sheathing replacement per sq ft - premium quality,3.39
+ROOF021,Asphalt shingle replacement per sq ft - premium quality,4.52
+ROOF022,Tile roof replacement per sq ft,8.8
+ROOF023,Asphalt shingle replacement per sq ft - premium quality,4.06
+ROOF024,Tile roof replacement per sq ft,9.36
+ROOF025,Asphalt shingle replacement per sq ft,4.54
+ROOF026,Roof sheathing replacement per sq ft - premium quality,3.26
+ROOF027,Roof sheathing replacement per sq ft,3.14
+ROOF028,Asphalt shingle replacement per sq ft,4.41
+ROOF029,Tile roof replacement per sq ft - premium quality,8.82
+ROOF030,Tile roof replacement per sq ft - economy grade,9.57
+ROOF031,Roof sheathing replacement per sq ft - premium quality,3.32
+ROOF032,Tile roof replacement per sq ft,8.5
+ROOF033,Tile roof replacement per sq ft - economy grade,8.32
+ROOF034,Roof sheathing replacement per sq ft - premium quality,3.44
+ROOF035,Asphalt shingle replacement per sq ft,4.95
+ROOF036,Asphalt shingle replacement per sq ft,4.8
+ROOF037,Tile roof replacement per sq ft,8.1
+ROOF038,Roof sheathing replacement per sq ft - economy grade,3.47
+ROOF039,Roof sheathing replacement per sq ft - economy grade,3.04
+ROOF040,Asphalt shingle replacement per sq ft,4.88
+ROOF041,Asphalt shingle replacement per sq ft,4.62
+ROOF042,Tile roof replacement per sq ft,9.22
+ROOF043,Roof sheathing replacement per sq ft,3.28
+ROOF044,Asphalt shingle replacement per sq ft - premium quality,4.85
+ROOF045,Tile roof replacement per sq ft - economy grade,8.91
+ROOF046,Roof sheathing replacement per sq ft,3.43
+ROOF047,Tile roof replacement per sq ft,8.48
+ROOF048,Tile roof replacement per sq ft - economy grade,9.67
+ROOF049,Tile roof replacement per sq ft - economy grade,8.2
+PLUMB001,Water heater replacement,1123.13
+PLUMB002,Water heater replacement - economy grade,1033.87
+PLUMB003,Water heater replacement,1140.17
+PLUMB004,Water heater replacement - economy grade,1065.86
+PLUMB005,Toilet replacement - economy grade,250.65
+PLUMB006,Toilet replacement - economy grade,229.05
+PLUMB007,Toilet replacement - economy grade,222.83
+PLUMB008,Water heater replacement - premium quality,1056.53
+PLUMB009,Vanity replacement,381.88
+PLUMB010,Vanity replacement - economy grade,407.87
+PLUMB011,Vanity replacement,385.03
+PLUMB012,Water heater replacement - economy grade,1017.49
+PLUMB013,Vanity replacement,401.78
+PLUMB014,Vanity replacement - premium quality,406.07
+PLUMB015,Toilet replacement,275.57
+PLUMB016,Vanity replacement - premium quality,393.05
+PLUMB017,Water heater replacement,984.25
+PLUMB018,Water heater replacement - economy grade,965.91
+PLUMB019,Toilet replacement,232.8
+PLUMB020,Toilet replacement,242.54
+PLUMB021,Toilet replacement - premium quality,220.88
+PLUMB022,Vanity replacement,390.16
+PLUMB023,Water heater replacement,1020.61
+PLUMB024,Water heater replacement - premium quality,1103.16
+PLUMB025,Toilet replacement - economy grade,242.45
+PLUMB026,Toilet replacement,262.2
+PLUMB027,Toilet replacement - premium quality,279.4
+PLUMB028,Toilet replacement - economy grade,268.76
+PLUMB029,Vanity replacement,392.18
+PLUMB030,Vanity replacement - economy grade,385.08
+PLUMB031,Vanity replacement,384.3
+PLUMB032,Water heater replacement - economy grade,1104.17
+PLUMB033,Water heater replacement - premium quality,1016.95
+PLUMB034,Vanity replacement - economy grade,393.34
+PLUMB035,Toilet replacement,249.49
+PLUMB036,Toilet replacement,261.56
+PLUMB037,Vanity replacement,382.08
+PLUMB038,Toilet replacement,275.8
+PLUMB039,Vanity replacement,402.28
+PLUMB040,Toilet replacement - economy grade,240.97
+PLUMB041,Vanity replacement,410.01
+PLUMB042,Water heater replacement,976.69
+PLUMB043,Water heater replacement,1012.33
+PLUMB044,Vanity replacement,401.92
+PLUMB045,Toilet replacement,272.67
+PLUMB046,Toilet replacement,273.89
+PLUMB047,Water heater replacement - economy grade,1033.34
+PLUMB048,Toilet replacement,273.2
+PLUMB049,Toilet replacement - economy grade,238.72
+ELEC001,Circuit breaker replacement - economy grade,148.93
+ELEC002,Light fixture replacement - economy grade,123.34
+ELEC003,Electrical outlet replacement - economy grade,87.17
+ELEC004,Light fixture replacement - economy grade,122.91
+ELEC005,Light fixture replacement,117.86
+ELEC006,Circuit breaker replacement,151.52
+ELEC007,Circuit breaker replacement - economy grade,143.42
+ELEC008,Light fixture replacement,120.69
+ELEC009,Circuit breaker replacement,141.91
+ELEC010,Light fixture replacement,120.81
+ELEC011,Circuit breaker replacement - economy grade,153.77
+ELEC012,Electrical outlet replacement - economy grade,82.29
+ELEC013,Electrical outlet replacement,80.49
+ELEC014,Circuit breaker replacement - economy grade,142.17
+ELEC015,Electrical outlet replacement - economy grade,85.47
+ELEC016,Circuit breaker replacement - premium quality,158.09
+ELEC017,Circuit breaker replacement - economy grade,144.61
+ELEC018,Light fixture replacement,122.4
+ELEC019,Circuit breaker replacement,150.74
+ELEC020,Light fixture replacement - premium quality,126.94
+ELEC021,Circuit breaker replacement,142.8
+ELEC022,Circuit breaker replacement,144.69
+ELEC023,Electrical outlet replacement - economy grade,80.63
+ELEC024,Circuit breaker replacement,159.68
+ELEC025,Circuit breaker replacement,142.08
+ELEC026,Electrical outlet replacement,85.64
+ELEC027,Circuit breaker replacement - economy grade,157.76
+ELEC028,Circuit breaker replacement - economy grade,144.19
+ELEC029,Circuit breaker replacement - premium quality,153.52
+ELEC030,Circuit breaker replacement,143.08
+ELEC031,Circuit breaker replacement - economy grade,144.0
+ELEC032,Electrical outlet replacement - economy grade,85.84
+ELEC033,Circuit breaker replacement,142.52
+ELEC034,Electrical outlet replacement - premium quality,81.43
+ELEC035,Light fixture replacement,120.37
+ELEC036,Electrical outlet replacement - premium quality,85.01
+ELEC037,Circuit breaker replacement,149.55
+ELEC038,Circuit breaker replacement - premium quality,141.54
+ELEC039,Light fixture replacement,115.0
+ELEC040,Electrical outlet replacement,81.2
+ELEC041,Light fixture replacement - economy grade,129.5
+ELEC042,Circuit breaker replacement - economy grade,145.45
+ELEC043,Electrical outlet replacement - premium quality,83.46
+ELEC044,Light fixture replacement - economy grade,126.6
+ELEC045,Circuit breaker replacement - economy grade,154.67
+ELEC046,Electrical outlet replacement - economy grade,89.49
+ELEC047,Light fixture replacement - premium quality,111.4
+ELEC048,Electrical outlet replacement,83.04
+ELEC049,Light fixture replacement,115.0
+HVAC001,Furnace replacement - economy grade,3314.1
+HVAC002,Furnace replacement - economy grade,3143.23
+HVAC003,Furnace replacement - premium quality,3946.58
+HVAC004,Duct cleaning per vent - premium quality,34.18
+HVAC005,Furnace replacement - economy grade,3651.43
+HVAC006,Duct cleaning per vent - economy grade,32.94
+HVAC007,Furnace replacement,3936.26
+HVAC008,Duct cleaning per vent,29.81
+HVAC009,AC unit replacement - economy grade,4006.75
+HVAC010,AC unit replacement,3962.92
+HVAC011,Furnace replacement,3609.95
+HVAC012,AC unit replacement - economy grade,4532.26
+HVAC013,AC unit replacement - economy grade,4660.02
+HVAC014,Duct cleaning per vent - economy grade,33.07
+HVAC015,Duct cleaning per vent - premium quality,29.37
+HVAC016,Duct cleaning per vent - economy grade,29.88
+HVAC017,AC unit replacement - economy grade,4649.78
+HVAC018,Furnace replacement,3425.46
+HVAC019,Furnace replacement,3965.37
+HVAC020,AC unit replacement,4842.19
+HVAC021,Duct cleaning per vent - economy grade,26.51
+HVAC022,Duct cleaning per vent - economy grade,31.67
+HVAC023,Furnace replacement - premium quality,3111.85
+HVAC024,AC unit replacement,4044.82
+HVAC025,Duct cleaning per vent - economy grade,31.56
+HVAC026,Duct cleaning per vent - economy grade,25.86
+HVAC027,Duct cleaning per vent - premium quality,33.79
+HVAC028,AC unit replacement,4347.29
+HVAC029,Furnace replacement - premium quality,3985.72
+HVAC030,Duct cleaning per vent - premium quality,31.43
+HVAC031,Furnace replacement,2903.28
+HVAC032,Furnace replacement,4138.45
+HVAC033,Duct cleaning per vent,34.16
+HVAC034,Duct cleaning per vent - economy grade,33.35
+HVAC035,Duct cleaning per vent,30.54
+HVAC036,Furnace replacement,4125.63
+HVAC037,Furnace replacement - economy grade,3259.34
+HVAC038,Duct cleaning per vent,28.68
+HVAC039,Furnace replacement - economy grade,3492.32
+HVAC040,AC unit replacement,3693.35
+HVAC041,AC unit replacement - economy grade,4567.31
+HVAC042,AC unit replacement,3511.73
+HVAC043,Duct cleaning per vent - premium quality,28.58
+HVAC044,Furnace replacement - economy grade,3770.95
+HVAC045,Furnace replacement,3021.75
+HVAC046,Furnace replacement - premium quality,4002.42
+HVAC047,AC unit replacement,4691.84
+HVAC048,AC unit replacement - economy grade,4058.85
+HVAC049,AC unit replacement - economy grade,4861.6
+DEMO001,Concrete demolition per sq ft - economy grade,3.25
+DEMO002,Concrete demolition per sq ft - premium quality,3.5
+DEMO003,Concrete demolition per sq ft,3.32
+DEMO004,Interior wall demolition per sq ft - premium quality,2.87
+DEMO005,Interior wall demolition per sq ft,2.32
+DEMO006,Interior wall demolition per sq ft,2.21
+DEMO007,Concrete demolition per sq ft,3.92
+DEMO008,Interior wall demolition per sq ft - economy grade,2.61
+DEMO009,Interior wall demolition per sq ft,2.8
+DEMO010,Interior wall demolition per sq ft - premium quality,2.23
+DEMO011,Concrete demolition per sq ft - premium quality,3.94
+DEMO012,Interior wall demolition per sq ft,2.9
+DEMO013,Concrete demolition per sq ft,3.47
+DEMO014,Concrete demolition per sq ft - economy grade,3.0
+DEMO015,Concrete demolition per sq ft,3.83
+DEMO016,Concrete demolition per sq ft,3.96
+DEMO017,Concrete demolition per sq ft - economy grade,3.06
+DEMO018,Interior wall demolition per sq ft,2.94
+DEMO019,Interior wall demolition per sq ft,2.08
+DEMO020,Interior wall demolition per sq ft - premium quality,2.81
+DEMO021,Concrete demolition per sq ft - premium quality,3.41
+DEMO022,Interior wall demolition per sq ft - economy grade,2.77
+DEMO023,Concrete demolition per sq ft - economy grade,3.17
+DEMO024,Interior wall demolition per sq ft - economy grade,2.53
+DEMO025,Concrete demolition per sq ft,3.89
+DEMO026,Interior wall demolition per sq ft,2.69
+DEMO027,Interior wall demolition per sq ft,2.77
+DEMO028,Concrete demolition per sq ft - economy grade,3.7
+DEMO029,Concrete demolition per sq ft,3.66
+DEMO030,Concrete demolition per sq ft - economy grade,3.04
+DEMO031,Concrete demolition per sq ft - economy grade,3.47
+DEMO032,Interior wall demolition per sq ft - economy grade,2.74
+DEMO033,Interior wall demolition per sq ft - premium quality,2.34
+DEMO034,Interior wall demolition per sq ft - premium quality,2.33
+DEMO035,Interior wall demolition per sq ft - economy grade,2.08
+DEMO036,Interior wall demolition per sq ft - economy grade,2.95
+DEMO037,Interior wall demolition per sq ft - premium quality,2.88
+DEMO038,Interior wall demolition per sq ft,2.36
+DEMO039,Interior wall demolition per sq ft,2.59
+DEMO040,Concrete demolition per sq ft - economy grade,3.05
+DEMO041,Interior wall demolition per sq ft,2.7
+DEMO042,Concrete demolition per sq ft,3.74
+DEMO043,Interior wall demolition per sq ft - economy grade,2.17
+DEMO044,Interior wall demolition per sq ft,2.18
+DEMO045,Interior wall demolition per sq ft,2.22
+DEMO046,Interior wall demolition per sq ft - premium quality,2.3
+DEMO047,Interior wall demolition per sq ft - premium quality,2.6
+DEMO048,Interior wall demolition per sq ft,2.04
+DEMO049,Interior wall demolition per sq ft,2.56
+CLEAN001,Debris removal per cubic yard - economy grade,37.19
+CLEAN002,Hazardous waste disposal per lb - premium quality,0.56
+CLEAN003,Hazardous waste disposal per lb,0.54
+CLEAN004,Hazardous waste disposal per lb - economy grade,0.55
+CLEAN005,Debris removal per cubic yard - premium quality,41.32
+CLEAN006,Debris removal per cubic yard - economy grade,43.66
+CLEAN007,Hazardous waste disposal per lb - premium quality,0.67
+CLEAN008,Hazardous waste disposal per lb - economy grade,0.55
+CLEAN009,Hazardous waste disposal per lb - premium quality,0.67
+CLEAN010,Debris removal per cubic yard,41.0
+CLEAN011,Hazardous waste disposal per lb,0.68
+CLEAN012,Debris removal per cubic yard,35.75
+CLEAN013,Debris removal per cubic yard - economy grade,38.45
+CLEAN014,Hazardous waste disposal per lb,0.71
+CLEAN015,Hazardous waste disposal per lb,0.77
+CLEAN016,Hazardous waste disposal per lb - economy grade,0.63
+CLEAN017,Hazardous waste disposal per lb,0.6
+CLEAN018,Debris removal per cubic yard - premium quality,48.08
+CLEAN019,Hazardous waste disposal per lb - economy grade,0.54
+CLEAN020,Debris removal per cubic yard - premium quality,44.23
+CLEAN021,Debris removal per cubic yard,42.29
+CLEAN022,Hazardous waste disposal per lb - premium quality,0.59
+CLEAN023,Hazardous waste disposal per lb - premium quality,0.69
+CLEAN024,Hazardous waste disposal per lb,0.56
+CLEAN025,Debris removal per cubic yard - premium quality,46.78
+CLEAN026,Debris removal per cubic yard,43.88
+CLEAN027,Debris removal per cubic yard,38.02
+CLEAN028,Hazardous waste disposal per lb,0.52
+CLEAN029,Debris removal per cubic yard - economy grade,49.41
+CLEAN030,Hazardous waste disposal per lb,0.72
+CLEAN031,Hazardous waste disposal per lb,0.56
+CLEAN032,Hazardous waste disposal per lb - economy grade,0.74
+CLEAN033,Hazardous waste disposal per lb - premium quality,0.52
+CLEAN034,Hazardous waste disposal per lb,0.53
+CLEAN035,Debris removal per cubic yard - premium quality,37.25
+CLEAN036,Debris removal per cubic yard,42.12
+CLEAN037,Hazardous waste disposal per lb - economy grade,0.6
+CLEAN038,Debris removal per cubic yard,37.94
+CLEAN039,Debris removal per cubic yard - premium quality,49.49
+CLEAN040,Hazardous waste disposal per lb - economy grade,0.52
+CLEAN041,Hazardous waste disposal per lb,0.5
+CLEAN042,Debris removal per cubic yard,47.17
+CLEAN043,Hazardous waste disposal per lb - premium quality,0.53
+CLEAN044,Hazardous waste disposal per lb,0.73
+CLEAN045,Debris removal per cubic yard - economy grade,47.34
+CLEAN046,Hazardous waste disposal per lb - economy grade,0.61
+CLEAN047,Debris removal per cubic yard,42.61
+CLEAN048,Debris removal per cubic yard - economy grade,37.44
+CLEAN049,Debris removal per cubic yard,36.08
