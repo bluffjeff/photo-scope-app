@@ -8,11 +8,14 @@ const API_URL =
 
 function App() {
   const [files, setFiles] = useState([]);
+  const [previews, setPreviews] = useState([]);
   const [reportData, setReportData] = useState(null);
   const [loading, setLoading] = useState(false);
 
   const handleFileChange = (e) => {
-    setFiles(Array.from(e.target.files));
+    const selectedFiles = Array.from(e.target.files);
+    setFiles(selectedFiles);
+    setPreviews(selectedFiles.map((file) => URL.createObjectURL(file)));
   };
 
   const handleUpload = async () => {
@@ -106,6 +109,26 @@ function App() {
           </button>
         </div>
 
+        {/* Thumbnails before upload */}
+        {previews.length > 0 && !reportData && (
+          <div style={{ display: "flex", gap: "10px", marginTop: "10px", flexWrap: "wrap", justifyContent: "center" }}>
+            {previews.map((src, idx) => (
+              <img
+                key={idx}
+                src={src}
+                alt={`preview-${idx}`}
+                style={{
+                  width: "100px",
+                  height: "100px",
+                  objectFit: "cover",
+                  borderRadius: "6px",
+                  border: "1px solid #ccc",
+                }}
+              />
+            ))}
+          </div>
+        )}
+
         {/* REPORT RESULTS */}
         {reportData && (
           <div style={{ marginTop: "30px" }}>
@@ -127,6 +150,14 @@ function App() {
 
             {reportData.results.map((res, idx) => (
               <div key={idx} style={{ marginTop: "20px", padding: "15px", border: "1px solid #ddd", borderRadius: "8px", background: "#fafafa" }}>
+                {/* Thumbnail for each result */}
+                {previews[idx] && (
+                  <img
+                    src={previews[idx]}
+                    alt={res.image}
+                    style={{ width: "120px", borderRadius: "6px", marginBottom: "10px" }}
+                  />
+                )}
                 <h3 style={{ marginBottom: "10px" }}>{res.image}</h3>
                 <p><strong>Scope:</strong> {res.scope}</p>
                 <table border="1" cellPadding="5" style={{ borderCollapse: "collapse", width: "100%", marginTop: "10px" }}>
