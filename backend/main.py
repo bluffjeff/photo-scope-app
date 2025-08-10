@@ -1,5 +1,7 @@
 import os
 import uuid
+import base64
+import requests
 from fastapi import FastAPI, File, UploadFile
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -8,24 +10,73 @@ from reportlab.pdfgen import canvas
 from PIL import Image
 import openai
 
-# Load API key from environment
+# Load API key
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
-# Create FastAPI app
 app = FastAPI()
 
-# ✅ Enable CORS for all origins (frontend → backend)
+# Enable CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # For production, replace with your frontend domain
+    allow_origins=["*"],  # In production, use your frontend URL
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Folder to store reports
 REPORTS_DIR = "reports"
 os.makedirs(REPORTS_DIR, exist_ok=True)
+
+async def analyze_damage_with_ai(image_path: str):
+    """Send image to OpenAI Vision API and return structured scope + line items."""
+    with open(image_path, "rb") as img_file:
+        img_bytes = img_file.read()
+    img_base64 = base64.b64encode(img_bytes).decode("utf-8")
+
+    prompt = """
+    You are an insurance restoration estimator for property damage in Sunnyvale & Palo Alto, California.
+    Look at the attached photo and:
+    1. Identify the type of damage (water, fire, mold, structural, etc.).
+    2. Provide a short Scope of Work.
+    3. List 2-5 relevant Xactimate line items with:
+       - code
+       - description
+       - quantity (approx)
+       - unit price in California (Sunnyvale/Palo Alto area)
+       - total price
+    Return JSON only, in this format:
+    {
+      "scope": "...",
+      "line_items": [
+        {"code": "XXX123", "desc": "...", "qty": 1, "price": 100, "total": 100}
+      ]
+    }
+    """
+
+    response = openai.ChatCompletion.create(
+        model="gpt-4o-mini",  # Vision-capable model
+        messages=[
+            {"role": "system", "content": "You are a restoration estimator assistant."},
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": prompt},
+                    {"type": "image_url", "image_url": f"data:image/jpeg;base64,{img_base64}"}
+                ]
+            }
+        ],
+        temperature=0
+    )
+
+    try:
+        ai_text = response.choices[0].message["content"]
+        import json
+        return json.loads(ai_text)
+    except Exception as e:
+        return {
+            "scope": "Unable to determine damage",
+            "line_items": []
+        }
 
 @app.post("/upload")
 async def upload_files(files: list[UploadFile] = File(...)):
@@ -38,19 +89,15 @@ async def upload_files(files: list[UploadFile] = File(...)):
         with open(file_path, "wb") as f:
             f.write(await file.read())
 
-        # For MVP: mock AI damage detection
-        scope = f"Replace damaged drywall and repaint in {file.filename} location"
-        line_items = [
-            {"code": "DRY123", "desc": "Drywall replacement", "qty": 10, "price": 50, "total": 500},
-            {"code": "PAINT45", "desc": "Repainting walls", "qty": 1, "price": 300, "total": 300},
-        ]
-        subtotal = sum(item["total"] for item in line_items)
+        # 🔹 Call AI for actual damage assessment
+        ai_result = await analyze_damage_with_ai(file_path)
+        subtotal = sum(item["total"] for item in ai_result.get("line_items", []))
         total_estimate += subtotal
 
         results.append({
             "image": file.filename,
-            "scope": scope,
-            "line_items": line_items,
+            "scope": ai_result.get("scope"),
+            "line_items": ai_result.get("line_items", []),
             "subtotal": subtotal
         })
 
