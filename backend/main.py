@@ -18,7 +18,7 @@ app = FastAPI()
 # Enable CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, use your frontend Render URL
+    allow_origins=["*"],  # In production, replace with your frontend Render URL
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -30,16 +30,19 @@ os.makedirs(REPORTS_DIR, exist_ok=True)
 # Load Xactimate pricing CSV
 XACTIMATE_CSV = "xactimate_ca.csv"
 xactimate_data = {}
-
 if os.path.exists(XACTIMATE_CSV):
     with open(XACTIMATE_CSV, newline="", encoding="utf-8") as csvfile:
         reader = csv.DictReader(csvfile)
         for row in reader:
-            code = row["code"].strip()
+            code = row["code"].strip().upper()
             xactimate_data[code] = {
                 "desc": row["desc"].strip(),
                 "price": float(row["price"])
             }
+
+@app.get("/")
+def home():
+    return {"message": "Photo Scope API is running"}
 
 async def analyze_damage_with_ai(image_path: str):
     """Analyze photo with OpenAI Vision and map results to Xactimate CSV pricing."""
@@ -146,7 +149,7 @@ async def upload_files(files: list[UploadFile] = File(...)):
     c.drawString(100, y, f"Total Estimate: ${total_estimate}")
     c.save()
 
-    # Save raw JSON for auditing
+    # Save raw JSON
     json_path = os.path.join(REPORTS_DIR, f"{job_id}_scope_data.json")
     with open(json_path, "w", encoding="utf-8") as jf:
         json.dump({
