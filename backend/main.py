@@ -2,11 +2,13 @@ import os
 import uuid
 import csv
 import base64
+import traceback
 from fastapi import FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from openai import OpenAI
 from fpdf import FPDF
+from openai.error import RateLimitError
 
 # ===== CONFIG =====
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
@@ -62,46 +64,52 @@ def home():
 # ===== AI ANALYSIS =====
 async def analyze_damage_with_ai(image_paths):
     """Send multiple images to GPT-4o-mini and get a human-readable contractor scope of work."""
-    image_contents = []
-    for path in image_paths:
-        with open(path, "rb") as img_file:
-            b64 = base64.b64encode(img_file.read()).decode("utf-8")
-        image_contents.append({
-            "type": "image_url",
-            "image_url": {"url": f"data:image/jpeg;base64,{b64}"}
-        })
+    try:
+        image_contents = []
+        for path in image_paths:
+            with open(path, "rb") as img_file:
+                b64 = base64.b64encode(img_file.read()).decode("utf-8")
+            image_contents.append({
+                "type": "image_url",
+                "image_url": {"url": f"data:image/jpeg;base64,{b64}"}
+            })
 
-    messages = [
-        {
-            "role": "system",
-            "content": (
-                "You are a property damage estimation expert for water/fire/mold mitigation. "
-                "Analyze the uploaded images and produce a detailed, human-readable scope of work "
-                "with estimated California Xactimate costs. Avoid JSON, write in clear sections."
-            )
-        },
-        {
-            "role": "user",
-            "content": [
-                {"type": "text", "text": (
-                    "Please provide:\n"
-                    "1. A summary of visible damage.\n"
-                    "2. Detailed line items with quantities, units, and costs.\n"
-                    "3. A total estimated cost.\n"
-                    "Format it clearly for contractors."
-                )},
-                *image_contents
-            ]
-        }
-    ]
+        messages = [
+            {
+                "role": "system",
+                "content": (
+                    "You are a property damage estimation expert for water/fire/mold mitigation. "
+                    "Analyze the uploaded images and produce a detailed, human-readable scope of work "
+                    "with estimated California Xactimate costs. Avoid JSON, write in clear sections."
+                )
+            },
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": (
+                        "Please provide:\n"
+                        "1. A summary of visible damage.\n"
+                        "2. Detailed line items with quantities, units, and costs.\n"
+                        "3. A total estimated cost.\n"
+                        "Format it clearly for contractors."
+                    )},
+                    *image_contents
+                ]
+            }
+        ]
 
-    response = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=messages,
-        temperature=0.3
-    )
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=messages,
+            temperature=0.3
+        )
 
-    return response.choices[0].message.content
+        return response.choices[0].message.content
+
+    except RateLimitError:
+        return "⚠️ Rate limit exceeded. Please wait a few minutes and try again."
+    except Exception as e:
+        return f"❌ Error calling AI: {str(e)}"
 
 # ===== PDF GENERATION =====
 def generate_pdf_report(job_id, ai_result, image_paths):
@@ -137,23 +145,33 @@ def generate_pdf_report(job_id, ai_result, image_paths):
     pdf.output(pdf_path)
     return pdf_path
 
-# ===== UPLOAD ENDPOINT =====
+# ===== UPLOAD ENDPOINT WITH ERROR HANDLING =====
 @app.post("/upload")
 async def upload_files(files: list[UploadFile] = File(...)):
-    job_id = str(uuid.uuid4())
-    upload_dir = os.path.join(BASE_DIR, "uploads")
-    os.makedirs(upload_dir, exist_ok=True)
+    try:
+        if not files or len(files) == 0:
+            return {"error": "No files received"}
 
-    file_paths = []
-    for file in files:
-        path = os.path.join(upload_dir, file.filename)
-        with open(path, "wb") as buffer:
-            buffer.write(await file.read())
-        file_paths.append(path)
+        job_id = str(uuid.uuid4())
+        upload_dir = os.path.join(BASE_DIR, "uploads")
+        os.makedirs(upload_dir, exist_ok=True)
 
-    ai_result = await analyze_damage_with_ai(file_paths)
-    pdf_path = generate_pdf_report(job_id, ai_result, file_paths)
-    return {"job_id": job_id, "pdf_url": f"/download/{job_id}"}
+        file_paths = []
+        for file in files:
+            path = os.path.join(upload_dir, file.filename)
+            with open(path, "wb") as buffer:
+                buffer.write(await file.read())
+            file_paths.append(path)
+
+        ai_result = await analyze_damage_with_ai(file_paths)
+        pdf_path = generate_pdf_report(job_id, ai_result, file_paths)
+
+        return {"job_id": job_id, "pdf_url": f"/download/{job_id}"}
+
+    except Exception as e:
+        err_log = traceback.format_exc()
+        print(f"❌ Error in /upload: {e}\n{err_log}")
+        return {"error": str(e), "details": err_log}
 
 # ===== DOWNLOAD ENDPOINT =====
 @app.get("/download/{job_id}")
