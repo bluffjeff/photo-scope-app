@@ -1,182 +1,142 @@
 import os
 import uuid
-import csv
 import base64
-import traceback
+import csv
 from fastapi import FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
-from openai import OpenAI
 from fpdf import FPDF
-from openai.error import RateLimitError
+from PIL import Image
+import google.generativeai as genai
 
-# ===== CONFIG =====
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+# Load environment variables
+from dotenv import load_dotenv
+load_dotenv()
+
+# Configure Gemini
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-XACTIMATE_CSV = os.path.join(BASE_DIR, "xactimate_ca.csv")
+UPLOAD_DIR = os.path.join(BASE_DIR, "uploads")
+REPORTS_DIR = os.path.join(BASE_DIR, "reports")
+CSV_PATH = os.path.join(BASE_DIR, "xactimate_ca.csv")
 
-client = OpenAI(api_key=OPENAI_API_KEY)
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+os.makedirs(REPORTS_DIR, exist_ok=True)
 
-# ===== LOAD CSV =====
+# Load Xactimate Data
 xactimate_data = {}
 try:
-    with open(XACTIMATE_CSV, newline="", encoding="utf-8-sig") as csvfile:
+    with open(CSV_PATH, "r", encoding="utf-8") as csvfile:
         reader = csv.DictReader(csvfile)
-        field_map = {name.strip().lower(): name for name in reader.fieldnames}
-        code_col = field_map.get("item")
-        desc_col = field_map.get("description")
-        unit_col = field_map.get("unit")
-        price_col = field_map.get("price")
-        if not all([code_col, desc_col, unit_col, price_col]):
-            raise KeyError(f"Missing one of required headers: {reader.fieldnames}")
         for row in reader:
-            code = row[code_col].strip()
-            price_str = row[price_col].strip()
-            try:
-                price_val = float(price_str) if price_str else 0.0
-            except ValueError:
-                price_val = 0.0
-            xactimate_data[code] = {
-                "description": row[desc_col],
-                "unit": row[unit_col],
-                "price": price_val
-            }
+            code = row.get("Item") or row.get("Code")
+            if code:
+                xactimate_data[code.strip()] = {
+                    "description": row.get("Description", ""),
+                    "unit": row.get("Unit", ""),
+                    "price": row.get("Price", "")
+                }
     print(f"✅ Loaded {len(xactimate_data)} Xactimate items")
 except FileNotFoundError:
-    print(f"❌ CSV file not found: {XACTIMATE_CSV}")
-except KeyError as e:
-    print(f"❌ CSV header mismatch: {e}")
+    print(f"❌ CSV file not found: {CSV_PATH}")
 
-# ===== FASTAPI APP =====
 app = FastAPI()
+
+# CORS setup
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-@app.get("/")
-def home():
-    return {"message": "Photo Scope API is running 🚀"}
-
-# ===== AI ANALYSIS =====
 async def analyze_damage_with_ai(image_paths):
-    """Send multiple images to GPT-4o-mini and get a human-readable contractor scope of work."""
+    """Analyze damage using Google Gemini Vision Pro."""
     try:
-        image_contents = []
+        images = []
         for path in image_paths:
-            with open(path, "rb") as img_file:
-                b64 = base64.b64encode(img_file.read()).decode("utf-8")
-            image_contents.append({
-                "type": "image_url",
-                "image_url": {"url": f"data:image/jpeg;base64,{b64}"}
-            })
+            with open(path, "rb") as f:
+                images.append({"mime_type": "image/jpeg", "data": f.read()})
 
-        messages = [
-            {
-                "role": "system",
-                "content": (
-                    "You are a property damage estimation expert for water/fire/mold mitigation. "
-                    "Analyze the uploaded images and produce a detailed, human-readable scope of work "
-                    "with estimated California Xactimate costs. Avoid JSON, write in clear sections."
-                )
-            },
-            {
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": (
-                        "Please provide:\n"
-                        "1. A summary of visible damage.\n"
-                        "2. Detailed line items with quantities, units, and costs.\n"
-                        "3. A total estimated cost.\n"
-                        "Format it clearly for contractors."
-                    )},
-                    *image_contents
-                ]
-            }
-        ]
-
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=messages,
-            temperature=0.3
+        prompt = (
+            "You are a property damage estimation expert for water/fire/mold mitigation. "
+            "Analyze the uploaded images and produce a detailed, human-readable scope of work "
+            "with estimated California Xactimate costs. Avoid JSON, write in clear sections:\n"
+            "1. Summary of visible damage\n"
+            "2. Detailed line items with quantities, units, and costs\n"
+            "3. Total estimated cost\n"
+            "Format clearly for contractors."
         )
 
-        return response.choices[0].message.content
+        model = genai.GenerativeModel("gemini-pro-vision")
+        response = model.generate_content([prompt] + images)
 
-    except RateLimitError:
-        return "⚠️ Rate limit exceeded. Please wait a few minutes and try again."
+        return response.text.strip()
+
     except Exception as e:
-        return f"❌ Error calling AI: {str(e)}"
+        return f"❌ AI analysis failed: {str(e)}"
 
-# ===== PDF GENERATION =====
-def generate_pdf_report(job_id, ai_result, image_paths):
-    """Generate a contractor-friendly PDF with thumbnails and readable text."""
-    pdf_dir = os.path.join(BASE_DIR, "reports")
-    os.makedirs(pdf_dir, exist_ok=True)
-    pdf_path = os.path.join(pdf_dir, f"{job_id}_scope_report.pdf")
-
+def generate_pdf_report(job_id, analysis_text, image_paths):
+    """Generate PDF report with thumbnails and AI analysis."""
+    pdf_path = os.path.join(REPORTS_DIR, f"{job_id}_scope_report.pdf")
     pdf = FPDF()
+    pdf.set_auto_page_break(auto=True, margin=15)
     pdf.add_page()
 
     # Title
-    pdf.set_font("Arial", 'B', 18)
-    pdf.cell(200, 10, "Scope of Work & Estimate", ln=True, align='C')
-    pdf.ln(8)
+    pdf.set_font("Arial", 'B', 16)
+    pdf.cell(0, 10, "Scope of Work Report", ln=True, align="C")
+    pdf.ln(10)
 
-    # Thumbnails
-    y_offset = pdf.get_y()
-    for img in image_paths:
-        if os.path.exists(img):
-            pdf.image(img, x=10, y=y_offset, w=60)
-            y_offset += 65
-            if y_offset > 180:
-                pdf.add_page()
-                y_offset = 10
-    pdf.ln(75)
+    # Add images as thumbnails
+    for img_path in image_paths:
+        try:
+            img = Image.open(img_path)
+            img.thumbnail((100, 100))
+            thumb_path = os.path.join(UPLOAD_DIR, f"thumb_{os.path.basename(img_path)}")
+            img.save(thumb_path)
+            pdf.image(thumb_path, x=pdf.get_x(), y=pdf.get_y(), w=40)
+            pdf.ln(45)
+        except Exception as e:
+            print(f"⚠️ Could not add image {img_path}: {e}")
 
-    # AI's natural language scope
-    pdf.set_font("Arial", size=12)
-    for line in ai_result.split("\n"):
-        pdf.multi_cell(0, 8, line)
+    # AI Analysis Text
+    pdf.set_font("Arial", '', 12)
+    pdf.multi_cell(0, 10, analysis_text)
 
     pdf.output(pdf_path)
     return pdf_path
 
-# ===== UPLOAD ENDPOINT WITH ERROR HANDLING =====
 @app.post("/upload")
 async def upload_files(files: list[UploadFile] = File(...)):
     try:
-        if not files or len(files) == 0:
+        if not files:
             return {"error": "No files received"}
 
         job_id = str(uuid.uuid4())
-        upload_dir = os.path.join(BASE_DIR, "uploads")
-        os.makedirs(upload_dir, exist_ok=True)
-
         file_paths = []
-        for file in files:
-            path = os.path.join(upload_dir, file.filename)
-            with open(path, "wb") as buffer:
-                buffer.write(await file.read())
-            file_paths.append(path)
 
-        ai_result = await analyze_damage_with_ai(file_paths)
-        pdf_path = generate_pdf_report(job_id, ai_result, file_paths)
+        for file in files:
+            save_path = os.path.join(UPLOAD_DIR, file.filename)
+            with open(save_path, "wb") as buffer:
+                buffer.write(await file.read())
+            file_paths.append(save_path)
+
+        analysis_text = await analyze_damage_with_ai(file_paths)
+        pdf_path = generate_pdf_report(job_id, analysis_text, file_paths)
 
         return {"job_id": job_id, "pdf_url": f"/download/{job_id}"}
 
     except Exception as e:
+        import traceback
         err_log = traceback.format_exc()
         print(f"❌ Error in /upload: {e}\n{err_log}")
         return {"error": str(e), "details": err_log}
 
-# ===== DOWNLOAD ENDPOINT =====
 @app.get("/download/{job_id}")
 async def download_report(job_id: str):
-    pdf_path = os.path.join(BASE_DIR, "reports", f"{job_id}_scope_report.pdf")
-    if not os.path.exists(pdf_path):
-        return {"error": "Report not found"}
-    return FileResponse(pdf_path, filename=f"{job_id}_scope_report.pdf")
+    pdf_path = os.path.join(REPORTS_DIR, f"{job_id}_scope_report.pdf")
+    if os.path.exists(pdf_path):
+        return FileResponse(pdf_path, filename=f"{job_id}_scope_report.pdf")
+    return {"error": "Report not found"}

@@ -1,6 +1,7 @@
+google-generativeai
 fastapi
 uvicorn
 python-multipart
-openai
 fpdf
-google-generativeai
+pillow
+
