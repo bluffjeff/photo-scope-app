@@ -1,6 +1,5 @@
 import os
 import uuid
-import base64
 import csv
 from fastapi import FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
@@ -9,11 +8,7 @@ from fpdf import FPDF
 from PIL import Image
 import google.generativeai as genai
 
-# Load environment variables
-from dotenv import load_dotenv
-load_dotenv()
-
-# Configure Gemini
+# Configure Gemini with API key from Render environment variables
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
