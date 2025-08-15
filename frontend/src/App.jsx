@@ -1,85 +1,130 @@
 import React, { useState } from "react";
 
 function App() {
-  const [selectedFiles, setSelectedFiles] = useState([]);
-  const [previews, setPreviews] = useState([]);
+  const [files, setFiles] = useState([]);
+  const [previewUrls, setPreviewUrls] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [pdfUrl, setPdfUrl] = useState("");
-  const [error, setError] = useState("");
-  const [uploading, setUploading] = useState(false);
-
-  const API_URL = "https://photo-scope-app-new.onrender.com"; // your backend URL
+  const [errorMessage, setErrorMessage] = useState("");
 
   const handleFileChange = (e) => {
-    const files = Array.from(e.target.files);
-    setSelectedFiles(files);
-    setPreviews(files.map((file) => URL.createObjectURL(file)));
-    setError("");
-    setPdfUrl("");
+    const selectedFiles = Array.from(e.target.files);
+    setFiles(selectedFiles);
+
+    // Generate preview thumbnails
+    const previews = selectedFiles.map((file) => URL.createObjectURL(file));
+    setPreviewUrls(previews);
   };
 
   const handleUpload = async () => {
-    if (!selectedFiles.length) {
-      setError("Please select at least one file.");
+    if (files.length === 0) {
+      setErrorMessage("Please select at least one file.");
       return;
     }
 
+    setLoading(true);
+    setErrorMessage("");
+    setPdfUrl("");
+
     const formData = new FormData();
-    // Must be exactly "files" to match backend parameter
-    selectedFiles.forEach((file) => {
+    files.forEach((file) => {
       formData.append("files", file);
     });
 
     try {
-      setUploading(true);
-      const res = await fetch(`${API_URL}/upload`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/upload`, {
         method: "POST",
         body: formData,
       });
 
-      if (!res.ok) throw new Error(await res.text());
+      // Handle non-2xx responses
+      if (!res.ok) {
+        const errData = await res.json().catch(() => null);
+        throw new Error(errData?.error || `HTTP ${res.status}`);
+      }
+
       const data = await res.json();
-      setPdfUrl(`${API_URL}${data.pdf_url}`);
+
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
+      setPdfUrl(data.pdf_url);
     } catch (err) {
-      setError(err.message || "Upload failed");
+      console.error("❌ Upload error:", err);
+      setErrorMessage(err.message || "Upload failed.");
     } finally {
-      setUploading(false);
+      setLoading(false);
     }
   };
 
   return (
-    <div style={{ textAlign: "center", padding: "2rem" }}>
-      <h1>📸 Photo Scope Uploader</h1>
+    <div style={{ maxWidth: "700px", margin: "0 auto", padding: "20px" }}>
+      <h1>📷 Photo Scope App</h1>
+
       <input type="file" multiple onChange={handleFileChange} />
-      <div
-        style={{
-          display: "flex",
-          flexWrap: "wrap",
-          gap: "10px",
-          marginTop: "1rem",
-          justifyContent: "center",
-        }}
-      >
-        {previews.map((src, idx) => (
+
+      {/* Show previews */}
+      <div style={{ display: "flex", flexWrap: "wrap", marginTop: "10px" }}>
+        {previewUrls.map((url, idx) => (
           <img
             key={idx}
-            src={src}
+            src={url}
             alt={`Preview ${idx}`}
-            style={{ width: "150px", border: "1px solid #ccc" }}
+            style={{
+              width: "100px",
+              height: "100px",
+              objectFit: "cover",
+              marginRight: "10px",
+              borderRadius: "5px",
+              border: "1px solid #ccc",
+            }}
           />
         ))}
       </div>
-      <br />
-      <button onClick={handleUpload} disabled={uploading}>
-        {uploading ? "Uploading..." : "Upload & Analyze"}
+
+      <button
+        onClick={handleUpload}
+        disabled={loading}
+        style={{
+          marginTop: "15px",
+          padding: "10px 20px",
+          backgroundColor: "#007bff",
+          color: "#fff",
+          border: "none",
+          borderRadius: "5px",
+          cursor: loading ? "not-allowed" : "pointer",
+        }}
+      >
+        {loading ? "Uploading..." : "Upload & Generate Report"}
       </button>
-      {error && <p style={{ color: "red" }}>{error}</p>}
+
+      {/* Error message */}
+      {errorMessage && (
+        <div style={{ marginTop: "15px", color: "red" }}>
+          ❌ {errorMessage}
+        </div>
+      )}
+
+      {/* PDF Download */}
       {pdfUrl && (
-        <p>
-          ✅{" "}
-          <a href={pdfUrl} target="_blank" rel="noopener noreferrer">
-            Download PDF Report
+        <div style={{ marginTop: "20px" }}>
+          <a
+            href={pdfUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: "inline-block",
+              padding: "10px 20px",
+              backgroundColor: "green",
+              color: "#fff",
+              borderRadius: "5px",
+              textDecoration: "none",
+            }}
+          >
+            📄 Download Report
           </a>
-        </p>
+        </div>
       )}
     </div>
   );
