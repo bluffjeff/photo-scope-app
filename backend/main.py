@@ -1,6 +1,7 @@
 import os
 import uuid
 import csv
+import traceback
 from fastapi import FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
@@ -70,7 +71,9 @@ async def analyze_damage_with_ai(image_paths):
         return response.text.strip()
 
     except Exception as e:
-        return f"❌ AI analysis failed: {str(e)}"
+        print(f"❌ Gemini Vision error: {e}")
+        traceback.print_exc()
+        return f"AI analysis failed: {str(e)}"
 
 def generate_pdf_report(job_id, analysis_text, image_paths):
     """Generate PDF report with thumbnails and AI analysis."""
@@ -118,16 +121,29 @@ async def upload_files(files: list[UploadFile] = File(...)):
                 buffer.write(await file.read())
             file_paths.append(save_path)
 
+        # Run AI analysis
         analysis_text = await analyze_damage_with_ai(file_paths)
+
+        # If AI failed, return error
+        if analysis_text.startswith("AI analysis failed"):
+            return {"error": analysis_text}
+
+        # Generate PDF
         pdf_path = generate_pdf_report(job_id, analysis_text, file_paths)
 
-        return {"job_id": job_id, "pdf_url": f"/download/{job_id}"}
+        return {
+            "job_id": job_id,
+            "pdf_url": f"/download/{job_id}",
+            "message": "Report generated successfully"
+        }
 
     except Exception as e:
-        import traceback
         err_log = traceback.format_exc()
         print(f"❌ Error in /upload: {e}\n{err_log}")
-        return {"error": str(e), "details": err_log}
+        return {
+            "error": f"Server error: {str(e)}",
+            "details": err_log
+        }
 
 @app.get("/download/{job_id}")
 async def download_report(job_id: str):
