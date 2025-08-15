@@ -131,9 +131,12 @@ async def upload_files(files: list[UploadFile] = File(...)):
         # Generate PDF
         pdf_path = generate_pdf_report(job_id, analysis_text, file_paths)
 
+        # Get absolute backend URL from environment or default
+        backend_url = os.getenv("BACKEND_URL", "https://photo-scope-app-new.onrender.com")
+
         return {
             "job_id": job_id,
-            "pdf_url": f"/download/{job_id}",
+            "pdf_url": f"{backend_url}/download/{job_id}",
             "message": "Report generated successfully"
         }
 
