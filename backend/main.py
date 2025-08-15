@@ -9,7 +9,7 @@ from fpdf import FPDF
 from PIL import Image
 import google.generativeai as genai
 
-# Configure Gemini with API key from Render environment variables
+# Configure Gemini
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -20,7 +20,7 @@ CSV_PATH = os.path.join(BASE_DIR, "xactimate_ca.csv")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(REPORTS_DIR, exist_ok=True)
 
-# Load Xactimate Data
+# Load Xactimate data
 xactimate_data = {}
 try:
     with open(CSV_PATH, "r", encoding="utf-8") as csvfile:
@@ -39,7 +39,7 @@ except FileNotFoundError:
 
 app = FastAPI()
 
-# CORS setup
+# CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -48,10 +48,11 @@ app.add_middleware(
 )
 
 async def analyze_damage_with_ai(image_paths):
-    """Analyze damage using Google Gemini Vision Pro."""
+    print("🔍 Starting AI analysis...")
     try:
         images = []
         for path in image_paths:
+            print(f"📷 Processing image for AI: {path}")
             with open(path, "rb") as f:
                 images.append({"mime_type": "image/jpeg", "data": f.read()})
 
@@ -67,16 +68,16 @@ async def analyze_damage_with_ai(image_paths):
 
         model = genai.GenerativeModel("gemini-pro-vision")
         response = model.generate_content([prompt] + images)
-
+        print("✅ AI analysis complete")
         return response.text.strip()
 
     except Exception as e:
-        print(f"❌ Gemini Vision error: {e}")
+        print(f"❌ AI analysis error: {e}")
         traceback.print_exc()
         return f"AI analysis failed: {str(e)}"
 
 def generate_pdf_report(job_id, analysis_text, image_paths):
-    """Generate PDF report with thumbnails and AI analysis."""
+    print("📝 Generating PDF report...")
     pdf_path = os.path.join(REPORTS_DIR, f"{job_id}_scope_report.pdf")
     pdf = FPDF()
     pdf.set_auto_page_break(auto=True, margin=15)
@@ -87,9 +88,10 @@ def generate_pdf_report(job_id, analysis_text, image_paths):
     pdf.cell(0, 10, "Scope of Work Report", ln=True, align="C")
     pdf.ln(10)
 
-    # Add images as thumbnails
+    # Thumbnails
     for img_path in image_paths:
         try:
+            print(f"🖼 Adding thumbnail for: {img_path}")
             img = Image.open(img_path)
             img.thumbnail((100, 100))
             thumb_path = os.path.join(UPLOAD_DIR, f"thumb_{os.path.basename(img_path)}")
@@ -99,17 +101,20 @@ def generate_pdf_report(job_id, analysis_text, image_paths):
         except Exception as e:
             print(f"⚠️ Could not add image {img_path}: {e}")
 
-    # AI Analysis Text
+    # AI text
     pdf.set_font("Arial", '', 12)
     pdf.multi_cell(0, 10, analysis_text)
 
     pdf.output(pdf_path)
+    print(f"✅ PDF saved at: {pdf_path}")
     return pdf_path
 
 @app.post("/upload")
 async def upload_files(files: list[UploadFile] = File(...)):
+    print("📥 Received upload request")
     try:
         if not files:
+            print("❌ No files received")
             return {"error": "No files received"}
 
         job_id = str(uuid.uuid4())
@@ -117,23 +122,23 @@ async def upload_files(files: list[UploadFile] = File(...)):
 
         for file in files:
             save_path = os.path.join(UPLOAD_DIR, file.filename)
+            print(f"💾 Saving file: {save_path}")
             with open(save_path, "wb") as buffer:
                 buffer.write(await file.read())
             file_paths.append(save_path)
 
-        # Run AI analysis
+        # AI
         analysis_text = await analyze_damage_with_ai(file_paths)
 
-        # If AI failed, return error
         if analysis_text.startswith("AI analysis failed"):
             return {"error": analysis_text}
 
-        # Generate PDF
+        # PDF
         pdf_path = generate_pdf_report(job_id, analysis_text, file_paths)
 
-        # Get absolute backend URL from environment or default
         backend_url = os.getenv("BACKEND_URL", "https://photo-scope-app-new.onrender.com")
 
+        print(f"✅ Upload process complete for job {job_id}")
         return {
             "job_id": job_id,
             "pdf_url": f"{backend_url}/download/{job_id}",
