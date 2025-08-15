@@ -37,19 +37,21 @@ function App() {
         body: formData,
       });
 
-      // Handle non-2xx responses
       if (!res.ok) {
         const errData = await res.json().catch(() => null);
         throw new Error(errData?.error || `HTTP ${res.status}`);
       }
 
       const data = await res.json();
+      if (data.error) throw new Error(data.error);
 
-      if (data.error) {
-        throw new Error(data.error);
+      // Ensure full URL
+      let finalPdfUrl = data.pdf_url;
+      if (finalPdfUrl && !finalPdfUrl.startsWith("http")) {
+        finalPdfUrl = `${import.meta.env.VITE_API_URL}${finalPdfUrl}`;
       }
 
-      setPdfUrl(data.pdf_url);
+      setPdfUrl(finalPdfUrl);
     } catch (err) {
       console.error("❌ Upload error:", err);
       setErrorMessage(err.message || "Upload failed.");
