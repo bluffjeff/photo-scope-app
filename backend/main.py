@@ -1,52 +1,59 @@
 import os
 import uuid
-import csv
 import traceback
+import pandas as pd
 from fastapi import FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fpdf import FPDF
-from PIL import Image
 import google.generativeai as genai
 
-# Configure Gemini
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-UPLOAD_DIR = os.path.join(BASE_DIR, "uploads")
-REPORTS_DIR = os.path.join(BASE_DIR, "reports")
-CSV_PATH = os.path.join(BASE_DIR, "xactimate_ca.csv")
-
-os.makedirs(UPLOAD_DIR, exist_ok=True)
-os.makedirs(REPORTS_DIR, exist_ok=True)
-
-# Load Xactimate data
-xactimate_data = {}
-try:
-    with open(CSV_PATH, "r", encoding="utf-8") as csvfile:
-        reader = csv.DictReader(csvfile)
-        for row in reader:
-            code = row.get("Item") or row.get("Code")
-            if code:
-                xactimate_data[code.strip()] = {
-                    "description": row.get("Description", ""),
-                    "unit": row.get("Unit", ""),
-                    "price": row.get("Price", "")
-                }
-    print(f"✅ Loaded {len(xactimate_data)} Xactimate items")
-except FileNotFoundError:
-    print(f"❌ CSV file not found: {CSV_PATH}")
-
+# ========== Setup ==========
 app = FastAPI()
+UPLOAD_DIR = "uploads"
+REPORT_DIR = "reports"
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+os.makedirs(REPORT_DIR, exist_ok=True)
 
 # CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"],  # adjust for security later
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+# Configure Gemini
+genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
+
+# Backend base URL (set in Render Env Var)
+BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
+
+# ========== Load Xactimate CSV ==========
+xactimate_data = {}
+csv_path = os.path.join("backend", "xactimate_ca.csv")
+try:
+    df = pd.read_csv(csv_path, encoding="utf-8")
+    expected_headers = {"Item", "Description", "Unit", "Price"}
+    if set(df.columns) >= expected_headers:
+        for _, row in df.iterrows():
+            try:
+                code = str(row["Item"]).strip()
+                desc = str(row["Description"]).strip()
+                unit = str(row["Unit"]).strip()
+                price = float(row["Price"])
+                xactimate_data[code] = {"desc": desc, "unit": unit, "price": price}
+            except Exception:
+                continue
+        print(f"✅ Loaded {len(xactimate_data)} Xactimate items")
+    else:
+        print(f"❌ CSV header mismatch: {df.columns.tolist()}")
+except FileNotFoundError:
+    print("⚠️ CSV not found, continuing without pricing data")
+
+
+# ========== AI Analysis ==========
 async def analyze_damage_with_ai(image_paths):
     print("🔍 Starting AI analysis...")
     try:
@@ -66,8 +73,9 @@ async def analyze_damage_with_ai(image_paths):
             "Format clearly for contractors."
         )
 
-        model = genai.GenerativeModel("gemini-pro-vision")
+        model = genai.GenerativeModel("gemini-1.5-pro-latest")
         response = model.generate_content([prompt] + images)
+
         print("✅ AI analysis complete")
         return response.text.strip()
 
@@ -76,86 +84,76 @@ async def analyze_damage_with_ai(image_paths):
         traceback.print_exc()
         return f"AI analysis failed: {str(e)}"
 
-def generate_pdf_report(job_id, analysis_text, image_paths):
-    print("📝 Generating PDF report...")
-    pdf_path = os.path.join(REPORTS_DIR, f"{job_id}_scope_report.pdf")
+
+# ========== PDF Generator ==========
+def generate_pdf(job_id, analysis_text, image_paths):
+    pdf_path = os.path.join(REPORT_DIR, f"{job_id}_scope_report.pdf")
     pdf = FPDF()
     pdf.set_auto_page_break(auto=True, margin=15)
+
     pdf.add_page()
+    pdf.set_font("Arial", "B", 16)
+    pdf.cell(200, 10, "Scope of Work Report", ln=True, align="C")
 
-    # Title
-    pdf.set_font("Arial", 'B', 16)
-    pdf.cell(0, 10, "Scope of Work Report", ln=True, align="C")
-    pdf.ln(10)
-
-    # Thumbnails
+    # Insert thumbnails
     for img_path in image_paths:
         try:
-            print(f"🖼 Adding thumbnail for: {img_path}")
-            img = Image.open(img_path)
-            img.thumbnail((100, 100))
-            thumb_path = os.path.join(UPLOAD_DIR, f"thumb_{os.path.basename(img_path)}")
-            img.save(thumb_path)
-            pdf.image(thumb_path, x=pdf.get_x(), y=pdf.get_y(), w=40)
-            pdf.ln(45)
+            pdf.image(img_path, w=60, h=60)
         except Exception as e:
             print(f"⚠️ Could not add image {img_path}: {e}")
 
-    # AI text
-    pdf.set_font("Arial", '', 12)
+    # Insert analysis text
+    pdf.ln(10)
+    pdf.set_font("Arial", "", 12)
     pdf.multi_cell(0, 10, analysis_text)
 
     pdf.output(pdf_path)
-    print(f"✅ PDF saved at: {pdf_path}")
     return pdf_path
 
+
+# ========== API Endpoints ==========
 @app.post("/upload")
 async def upload_files(files: list[UploadFile] = File(...)):
-    print("📥 Received upload request")
+    job_id = str(uuid.uuid4())
+    print(f"📥 Received upload request (job_id={job_id})")
+
+    saved_paths = []
     try:
-        if not files:
-            print("❌ No files received")
-            return {"error": "No files received"}
-
-        job_id = str(uuid.uuid4())
-        file_paths = []
-
+        # Save uploaded images
         for file in files:
-            save_path = os.path.join(UPLOAD_DIR, file.filename)
-            print(f"💾 Saving file: {save_path}")
-            with open(save_path, "wb") as buffer:
-                buffer.write(await file.read())
-            file_paths.append(save_path)
+            file_path = os.path.join(UPLOAD_DIR, f"{job_id}_{file.filename}")
+            with open(file_path, "wb") as f:
+                f.write(await file.read())
+            saved_paths.append(file_path)
+        print(f"✅ Saved {len(saved_paths)} files")
 
-        # AI
-        analysis_text = await analyze_damage_with_ai(file_paths)
+        # AI analysis
+        ai_result = await analyze_damage_with_ai(saved_paths)
 
-        if analysis_text.startswith("AI analysis failed"):
-            return {"error": analysis_text}
+        # PDF generation
+        print("📝 Generating PDF report...")
+        pdf_path = generate_pdf(job_id, ai_result, saved_paths)
 
-        # PDF
-        pdf_path = generate_pdf_report(job_id, analysis_text, file_paths)
+        # Build full URL for frontend
+        pdf_url = f"{BACKEND_URL}/download/{job_id}"
 
-        backend_url = os.getenv("BACKEND_URL", "https://photo-scope-app-new.onrender.com")
-
-        print(f"✅ Upload process complete for job {job_id}")
-        return {
-            "job_id": job_id,
-            "pdf_url": f"{backend_url}/download/{job_id}",
-            "message": "Report generated successfully"
-        }
+        print(f"✅ Upload process complete: {pdf_url}")
+        return {"job_id": job_id, "pdf_url": pdf_url, "message": "Report generated successfully"}
 
     except Exception as e:
-        err_log = traceback.format_exc()
-        print(f"❌ Error in /upload: {e}\n{err_log}")
-        return {
-            "error": f"Server error: {str(e)}",
-            "details": err_log
-        }
+        print(f"❌ Error in /upload: {e}")
+        traceback.print_exc()
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
 
 @app.get("/download/{job_id}")
 async def download_report(job_id: str):
-    pdf_path = os.path.join(REPORTS_DIR, f"{job_id}_scope_report.pdf")
-    if os.path.exists(pdf_path):
-        return FileResponse(pdf_path, filename=f"{job_id}_scope_report.pdf")
-    return {"error": "Report not found"}
+    pdf_path = os.path.join(REPORT_DIR, f"{job_id}_scope_report.pdf")
+    if not os.path.exists(pdf_path):
+        return JSONResponse(status_code=404, content={"error": "Report not found"})
+    return FileResponse(pdf_path, media_type="application/pdf", filename=f"{job_id}_scope_report.pdf")
+
+
+@app.get("/")
+async def root():
+    return {"message": "Backend running. Use /upload to submit files."}
