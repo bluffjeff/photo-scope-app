@@ -18,7 +18,7 @@ os.makedirs(REPORT_DIR, exist_ok=True)
 # CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # adjust for security later
+    allow_origins=["*"],  # Allow all for now
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -27,7 +27,7 @@ app.add_middleware(
 # Configure Gemini
 genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
 
-# Backend base URL (set in Render Env Var)
+# Backend base URL (used for PDF links)
 BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
 
 # ========== Load Xactimate CSV ==========
@@ -67,5 +67,89 @@ if csv_path:
 else:
     print("⚠️ CSV not found in any known location, continuing without pricing data")
 
-# =================== AI + PDF + Routes remain the same ===================
-# (I kept your working AI analysis, PDF generation, and upload/download endpoints from before)
+# ========== AI Analysis ==========
+async def analyze_damage_with_ai(image_paths):
+    print("🔍 Starting AI analysis...")
+    try:
+        images = []
+        for path in image_paths:
+            with open(path, "rb") as f:
+                images.append({"mime_type": "image/jpeg", "data": f.read()})
+
+        prompt = (
+            "You are a property damage estimation expert for water/fire/mold mitigation. "
+            "Analyze the uploaded images and produce a clear scope of work with estimated "
+            "California Xactimate costs. Format as:\n\n"
+            "1. Summary of visible damage\n"
+            "2. Detailed line items (code, description, qty, unit, cost)\n"
+            "3. Total estimated cost"
+        )
+
+        model = genai.GenerativeModel("gemini-1.5-pro-latest")
+        response = model.generate_content([prompt] + images)
+
+        print("✅ AI analysis complete")
+        return response.text.strip()
+
+    except Exception as e:
+        print(f"❌ AI analysis error: {e}")
+        traceback.print_exc()
+        return "⚠️ AI analysis failed. Please retry later."
+
+# ========== Upload Endpoint ==========
+@app.post("/upload")
+async def upload_files(files: list[UploadFile] = File(...)):
+    job_id = str(uuid.uuid4())
+    saved_files = []
+
+    print(f"📥 Received upload request (job_id={job_id})")
+
+    try:
+        # Save uploaded files
+        for file in files:
+            file_path = os.path.join(UPLOAD_DIR, f"{job_id}_{file.filename}")
+            with open(file_path, "wb") as f:
+                f.write(await file.read())
+            saved_files.append(file_path)
+
+        print(f"✅ Saved {len(saved_files)} files")
+
+        # Run AI safely
+        ai_result = await analyze_damage_with_ai(saved_files)
+
+        # Generate PDF report (always)
+        pdf_path = os.path.join(REPORT_DIR, f"{job_id}_scope_report.pdf")
+        pdf = FPDF()
+        pdf.add_page()
+        pdf.set_font("Arial", size=12)
+
+        pdf.cell(200, 10, txt="Scope of Work Report", ln=True, align="C")
+        pdf.ln(10)
+
+        # Add thumbnails
+        for path in saved_files:
+            try:
+                pdf.image(path, w=60)
+                pdf.ln(5)
+            except Exception as e:
+                print(f"⚠️ Skipped thumbnail for {path}: {e}")
+
+        pdf.multi_cell(0, 10, ai_result)
+
+        pdf.output(pdf_path)
+        print(f"📝 PDF generated at {pdf_path}")
+
+        return {"file_path": f"{BACKEND_URL}/download/{job_id}"}
+
+    except Exception as e:
+        print(f"❌ Fatal error in upload: {e}")
+        traceback.print_exc()
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
+# ========== Download Endpoint ==========
+@app.get("/download/{job_id}")
+async def download_report(job_id: str):
+    pdf_path = os.path.join(REPORT_DIR, f"{job_id}_scope_report.pdf")
+    if os.path.exists(pdf_path):
+        return FileResponse(pdf_path, filename="scope_report.pdf", media_type="application/pdf")
+    return JSONResponse(status_code=404, content={"error": "Report not found"})
