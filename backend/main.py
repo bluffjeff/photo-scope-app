@@ -134,7 +134,13 @@ async def upload_files(files: list[UploadFile] = File(...)):
             except Exception as e:
                 print(f"⚠️ Skipped thumbnail for {path}: {e}")
 
-        pdf.multi_cell(0, 10, ai_result)
+        # Ensure AI text is safe for PDF
+        try:
+            safe_text = ai_result.encode("latin-1", "replace").decode("latin-1")
+        except Exception:
+            safe_text = "⚠️ Error displaying analysis text (encoding issue)."
+
+        pdf.multi_cell(0, 10, safe_text)
 
         pdf.output(pdf_path)
         print(f"📝 PDF generated at {pdf_path}")
