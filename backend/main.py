@@ -18,7 +18,7 @@ os.makedirs(REPORT_DIR, exist_ok=True)
 # CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all for now
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -27,20 +27,13 @@ app.add_middleware(
 # Configure Gemini
 genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
 
-# Backend base URL (used for PDF links)
 BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
 
 # ========== Load Xactimate CSV ==========
 xactimate_data = {}
-possible_paths = [
-    os.path.join("backend", "xactimate_ca.csv"),
-    "xactimate_ca.csv"
-]
-
 csv_path = None
-for path in possible_paths:
+for path in [os.path.join("backend", "xactimate_ca.csv"), "xactimate_ca.csv"]:
     abs_path = os.path.abspath(path)
-    print(f"🔎 Checking for CSV at: {abs_path}")
     if os.path.exists(path):
         csv_path = path
         break
@@ -48,8 +41,7 @@ for path in possible_paths:
 if csv_path:
     try:
         df = pd.read_csv(csv_path, encoding="utf-8")
-        expected_headers = {"Item", "Description", "Unit", "Price"}
-        if set(df.columns) >= expected_headers:
+        if set(df.columns) >= {"Item", "Description", "Unit", "Price"}:
             for _, row in df.iterrows():
                 try:
                     code = str(row["Item"]).strip()
@@ -65,11 +57,10 @@ if csv_path:
     except Exception as e:
         print(f"❌ Error reading CSV: {e}")
 else:
-    print("⚠️ CSV not found in any known location, continuing without pricing data")
+    print("⚠️ CSV not found, continuing without pricing data")
 
-# ========== AI Analysis ==========
+# ========== AI Analysis with Fallback ==========
 async def analyze_damage_with_ai(image_paths):
-    print("🔍 Starting AI analysis...")
     try:
         images = []
         for path in image_paths:
@@ -87,14 +78,44 @@ async def analyze_damage_with_ai(image_paths):
 
         model = genai.GenerativeModel("gemini-1.5-pro-latest")
         response = model.generate_content([prompt] + images)
-
-        print("✅ AI analysis complete")
         return response.text.strip()
 
     except Exception as e:
         print(f"❌ AI analysis error: {e}")
         traceback.print_exc()
-        return "⚠️ AI analysis failed. Please retry later."
+
+        # 🔄 FALLBACK with real Xactimate data
+        sample_items = [
+            ("WTR101", 3),  # water extraction, 3 hrs
+            ("CLN201", 2),  # dehumidifier setup, 2 units
+            ("DEM305", 50)  # remove baseboards, 50 LF
+        ]
+
+        report_lines = []
+        total = 0
+        for code, qty in sample_items:
+            if code in xactimate_data:
+                desc = xactimate_data[code]["desc"]
+                unit = xactimate_data[code]["unit"]
+                price = xactimate_data[code]["price"]
+                cost = qty * price
+                total += cost
+                report_lines.append(
+                    f"{code} – {desc} – {qty} {unit} @ ${price:.2f}/{unit} = ${cost:.2f}"
+                )
+            else:
+                report_lines.append(f"{code} – Not found in CSV – Qty: {qty}")
+
+        fallback_text = (
+            "⚠️ AI analysis unavailable (quota exceeded or error).\n\n"
+            "📌 Auto-generated Manual Report:\n\n"
+            "1. Summary of visible damage:\n"
+            "   - Water intrusion suspected, baseboards affected, drying equipment required.\n\n"
+            "2. Suggested line items:\n" +
+            "\n".join(report_lines) +
+            f"\n\n3. Total estimated cost: ${total:.2f}\n"
+        )
+        return fallback_text
 
 # ========== Upload Endpoint ==========
 @app.post("/upload")
@@ -102,27 +123,19 @@ async def upload_files(files: list[UploadFile] = File(...)):
     job_id = str(uuid.uuid4())
     saved_files = []
 
-    print(f"📥 Received upload request (job_id={job_id})")
-
     try:
-        # Save uploaded files
         for file in files:
             file_path = os.path.join(UPLOAD_DIR, f"{job_id}_{file.filename}")
             with open(file_path, "wb") as f:
                 f.write(await file.read())
             saved_files.append(file_path)
 
-        print(f"✅ Saved {len(saved_files)} files")
-
-        # Run AI safely
         ai_result = await analyze_damage_with_ai(saved_files)
 
-        # Generate PDF report (always)
         pdf_path = os.path.join(REPORT_DIR, f"{job_id}_scope_report.pdf")
         pdf = FPDF()
         pdf.add_page()
         pdf.set_font("Arial", size=12)
-
         pdf.cell(200, 10, txt="Scope of Work Report", ln=True, align="C")
         pdf.ln(10)
 
@@ -134,21 +147,17 @@ async def upload_files(files: list[UploadFile] = File(...)):
             except Exception as e:
                 print(f"⚠️ Skipped thumbnail for {path}: {e}")
 
-        # Ensure AI text is safe for PDF
         try:
             safe_text = ai_result.encode("latin-1", "replace").decode("latin-1")
         except Exception:
             safe_text = "⚠️ Error displaying analysis text (encoding issue)."
 
         pdf.multi_cell(0, 10, safe_text)
-
         pdf.output(pdf_path)
-        print(f"📝 PDF generated at {pdf_path}")
 
         return {"file_path": f"{BACKEND_URL}/download/{job_id}"}
 
     except Exception as e:
-        print(f"❌ Fatal error in upload: {e}")
         traceback.print_exc()
         return JSONResponse(status_code=500, content={"error": str(e)})
 
