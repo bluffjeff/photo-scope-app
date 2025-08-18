@@ -26,7 +26,6 @@ app.add_middleware(
 
 # Configure Gemini
 genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
-
 BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
 
 # ========== Load Xactimate CSV ==========
@@ -59,63 +58,72 @@ if csv_path:
 else:
     print("⚠️ CSV not found, continuing without pricing data")
 
-# ========== AI Analysis with Fallback ==========
+# ========== AI Analysis with Multi-Model Fallback ==========
 async def analyze_damage_with_ai(image_paths):
+    images = []
+    for path in image_paths:
+        with open(path, "rb") as f:
+            images.append({"mime_type": "image/jpeg", "data": f.read()})
+
+    prompt = (
+        "You are a property damage estimation expert for water/fire/mold mitigation. "
+        "Analyze the uploaded images and produce a clear scope of work with estimated "
+        "California Xactimate costs. Format as:\n\n"
+        "1. Summary of visible damage\n"
+        "2. Detailed line items (code, description, qty, unit, cost)\n"
+        "3. Total estimated cost"
+    )
+
+    # Try Gemini Flash first
     try:
-        images = []
-        for path in image_paths:
-            with open(path, "rb") as f:
-                images.append({"mime_type": "image/jpeg", "data": f.read()})
+        model = genai.GenerativeModel("gemini-1.5-flash")
+        response = model.generate_content([prompt] + images)
+        print("✅ Gemini Flash used successfully")
+        return response.text.strip()
+    except Exception as e:
+        print(f"⚠️ Gemini Flash failed: {e}")
 
-        prompt = (
-            "You are a property damage estimation expert for water/fire/mold mitigation. "
-            "Analyze the uploaded images and produce a clear scope of work with estimated "
-            "California Xactimate costs. Format as:\n\n"
-            "1. Summary of visible damage\n"
-            "2. Detailed line items (code, description, qty, unit, cost)\n"
-            "3. Total estimated cost"
-        )
-
+    # Fallback to Gemini Pro
+    try:
         model = genai.GenerativeModel("gemini-1.5-pro-latest")
         response = model.generate_content([prompt] + images)
+        print("✅ Gemini Pro used successfully")
         return response.text.strip()
-
     except Exception as e:
-        print(f"❌ AI analysis error: {e}")
-        traceback.print_exc()
+        print(f"⚠️ Gemini Pro failed: {e}")
 
-        # 🔄 FALLBACK with real Xactimate data
-        sample_items = [
-            ("WTR101", 3),  # water extraction, 3 hrs
-            ("CLN201", 2),  # dehumidifier setup, 2 units
-            ("DEM305", 50)  # remove baseboards, 50 LF
-        ]
+    # Final Fallback → Xactimate template
+    print("⚠️ Using fallback template with CSV data")
+    sample_items = [
+        ("WTR101", 3),
+        ("CLN201", 2),
+        ("DEM305", 50)
+    ]
 
-        report_lines = []
-        total = 0
-        for code, qty in sample_items:
-            if code in xactimate_data:
-                desc = xactimate_data[code]["desc"]
-                unit = xactimate_data[code]["unit"]
-                price = xactimate_data[code]["price"]
-                cost = qty * price
-                total += cost
-                report_lines.append(
-                    f"{code} – {desc} – {qty} {unit} @ ${price:.2f}/{unit} = ${cost:.2f}"
-                )
-            else:
-                report_lines.append(f"{code} – Not found in CSV – Qty: {qty}")
+    report_lines = []
+    total = 0
+    for code, qty in sample_items:
+        if code in xactimate_data:
+            desc = xactimate_data[code]["desc"]
+            unit = xactimate_data[code]["unit"]
+            price = xactimate_data[code]["price"]
+            cost = qty * price
+            total += cost
+            report_lines.append(
+                f"{code} – {desc} – {qty} {unit} @ ${price:.2f}/{unit} = ${cost:.2f}"
+            )
+        else:
+            report_lines.append(f"{code} – Not found in CSV – Qty: {qty}")
 
-        fallback_text = (
-            "⚠️ AI analysis unavailable (quota exceeded or error).\n\n"
-            "📌 Auto-generated Manual Report:\n\n"
-            "1. Summary of visible damage:\n"
-            "   - Water intrusion suspected, baseboards affected, drying equipment required.\n\n"
-            "2. Suggested line items:\n" +
-            "\n".join(report_lines) +
-            f"\n\n3. Total estimated cost: ${total:.2f}\n"
-        )
-        return fallback_text
+    return (
+        "⚠️ AI analysis unavailable (quota exceeded or error).\n\n"
+        "📌 Auto-generated Manual Report:\n\n"
+        "1. Summary of visible damage:\n"
+        "   - Water intrusion suspected, baseboards affected, drying equipment required.\n\n"
+        "2. Suggested line items:\n" +
+        "\n".join(report_lines) +
+        f"\n\n3. Total estimated cost: ${total:.2f}\n"
+    )
 
 # ========== Upload Endpoint ==========
 @app.post("/upload")
