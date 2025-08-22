@@ -1,92 +1,172 @@
 import React, { useState } from "react";
 
 function App() {
+  const [phase, setPhase] = useState("inspection");
   const [files, setFiles] = useState([]);
-  const [previews, setPreviews] = useState([]);
-  const [reportUrl, setReportUrl] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const API_URL = import.meta.env.VITE_API_URL || "https://photo-scope-app-new.onrender.com";
+  const [notes, setNotes] = useState("");
+  const [scope, setScope] = useState("");
+  const [sketch, setSketch] = useState(null);
+  const [jobId, setJobId] = useState("");
+  const [reportUrl, setReportUrl] = useState("");
 
-  // Handle file selection & preview
+  const backendUrl = import.meta.env.VITE_API_URL || "https://photo-scope-app-new.onrender.com";
+
   const handleFileChange = (e) => {
-    const selectedFiles = Array.from(e.target.files);
-    setFiles(selectedFiles);
-
-    const previewUrls = selectedFiles.map((file) => URL.createObjectURL(file));
-    setPreviews(previewUrls);
+    setFiles([...e.target.files]);
   };
 
-  // Upload to backend
-  const handleUpload = async () => {
-    if (files.length === 0) {
-      alert("Please select at least one image.");
+  const handleSketchChange = (e) => {
+    setSketch(e.target.files[0]);
+  };
+
+  const uploadInspection = async () => {
+    const formData = new FormData();
+    files.forEach((file) => formData.append("files", file));
+    formData.append("notes", notes);
+    formData.append("scope", scope);
+    if (sketch) formData.append("sketch", sketch);
+
+    try {
+      const res = await fetch(`${backendUrl}/upload-inspection`, {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      setJobId(data.job_id);
+      alert("✅ Inspection uploaded successfully. Save Job ID: " + data.job_id);
+    } catch (err) {
+      console.error(err);
+      alert("❌ Failed to upload inspection");
+    }
+  };
+
+  const uploadWork = async () => {
+    if (!jobId) {
+      alert("❌ Please upload inspection first to get a Job ID.");
       return;
     }
-
-    setLoading(true);
-    setReportUrl(null);
-
     const formData = new FormData();
     files.forEach((file) => formData.append("files", file));
 
     try {
-      const response = await fetch(`${API_URL}/upload`, {
+      const res = await fetch(`${backendUrl}/upload-work/${jobId}`, {
         method: "POST",
         body: formData,
       });
+      const data = await res.json();
+      alert("✅ Work photos uploaded for Job ID: " + data.job_id);
+    } catch (err) {
+      console.error(err);
+      alert("❌ Failed to upload work photos");
+    }
+  };
 
-      if (!response.ok) {
-        throw new Error(`Upload failed: ${response.statusText}`);
-      }
-
-      const result = await response.json();
-      console.log("Upload result:", result);
-
-      if (result.file_path) {
-        setReportUrl(result.file_path);
+  const generateReport = async () => {
+    if (!jobId) {
+      alert("❌ No Job ID found.");
+      return;
+    }
+    try {
+      const res = await fetch(`${backendUrl}/generate-report/${jobId}`);
+      const data = await res.json();
+      if (data.report_url) {
+        setReportUrl(`${backendUrl}${data.report_url}`);
       } else {
-        alert("No report generated.");
+        alert("❌ Report generation failed");
       }
-    } catch (error) {
-      console.error("Error uploading:", error);
-      alert("Upload failed. Check console for details.");
-    } finally {
-      setLoading(false);
+    } catch (err) {
+      console.error(err);
+      alert("❌ Error generating report");
     }
   };
 
   return (
-    <div style={{ padding: "20px", fontFamily: "Arial" }}>
-      <h2>📸 Photo Scope App</h2>
-      <input type="file" multiple accept="image/*" onChange={handleFileChange} />
-      
-      <div style={{ marginTop: "15px", display: "flex", gap: "10px", flexWrap: "wrap" }}>
-        {previews.map((src, i) => (
-          <img
-            key={i}
-            src={src}
-            alt="preview"
-            width="120"
-            style={{ border: "1px solid #ccc", borderRadius: "8px", padding: "4px" }}
-          />
-        ))}
+    <div className="p-6 max-w-3xl mx-auto">
+      <h1 className="text-2xl font-bold mb-4">📸 Photo Scope App</h1>
+
+      <div className="mb-4">
+        <label className="mr-4">
+          <input
+            type="radio"
+            value="inspection"
+            checked={phase === "inspection"}
+            onChange={() => setPhase("inspection")}
+          />{" "}
+          Inspection Phase
+        </label>
+        <label>
+          <input
+            type="radio"
+            value="work"
+            checked={phase === "work"}
+            onChange={() => setPhase("work")}
+          />{" "}
+          Work Completed Phase
+        </label>
       </div>
 
-      <button
-        onClick={handleUpload}
-        disabled={loading}
-        style={{ marginTop: "20px", padding: "10px 20px", cursor: "pointer" }}
-      >
-        {loading ? "⏳ Generating Report..." : "🚀 Upload & Generate Report"}
-      </button>
+      {phase === "inspection" && (
+        <>
+          <textarea
+            className="w-full border p-2 mb-2"
+            placeholder="Enter inspector notes..."
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+          />
+          <textarea
+            className="w-full border p-2 mb-2"
+            placeholder="Enter scope..."
+            value={scope}
+            onChange={(e) => setScope(e.target.value)}
+          />
+          <div className="mb-2">
+            <label>Upload Sketch: </label>
+            <input type="file" accept=".jpg,.jpeg,.png,.pdf" onChange={handleSketchChange} />
+          </div>
+        </>
+      )}
+
+      <div className="mb-4">
+        <label>Upload Photos: </label>
+        <input type="file" multiple accept="image/*" onChange={handleFileChange} />
+      </div>
+
+      {files.length > 0 && (
+        <div className="grid grid-cols-3 gap-2 mb-4">
+          {files.map((file, idx) => (
+            <img
+              key={idx}
+              src={URL.createObjectURL(file)}
+              alt="preview"
+              className="w-32 h-32 object-cover border"
+            />
+          ))}
+        </div>
+      )}
+
+      {phase === "inspection" ? (
+        <button className="bg-blue-500 text-white px-4 py-2 rounded" onClick={uploadInspection}>
+          Upload Inspection
+        </button>
+      ) : (
+        <button className="bg-green-500 text-white px-4 py-2 rounded" onClick={uploadWork}>
+          Upload Work Photos
+        </button>
+      )}
+
+      <div className="mt-4">
+        <button className="bg-purple-500 text-white px-4 py-2 rounded" onClick={generateReport}>
+          Generate Final Report
+        </button>
+      </div>
 
       {reportUrl && (
-        <div style={{ marginTop: "20px" }}>
+        <div className="mt-4">
           <a
             href={reportUrl}
             target="_blank"
             rel="noopener noreferrer"
-            style={{ padding: "10px 15px", background: "#007bff", color: "#fff", borderRadius: "5px", textDecoration: "none" }}
+            className="text-blue-600 underline"
           >
             📄 Download Report
           </a>
