@@ -5,3 +5,5 @@ pandas
 python-multipart
 google-generativeai
 python-dotenv
+fpdf2
+requests

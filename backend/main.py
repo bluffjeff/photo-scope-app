@@ -2,18 +2,19 @@ import os
 import uuid
 import shutil
 import pandas as pd
+import requests
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fpdf import FPDF
 from typing import List
 
-# ========== Setup ==========
+# ========= Setup =========
 app = FastAPI()
 UPLOAD_DIR = "jobs"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-# Allow frontend (Render static site) to access backend
+# Allow frontend → backend communication
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -22,10 +23,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ========== Load Xactimate CSV ==========
+# ========= Load Xactimate CSV =========
 xactimate_data = {}
 csv_path = os.path.join("backend", "xactimate_ca.csv")
-if os.path.exists(csv_path):
+
+def load_csv():
     try:
         df = pd.read_csv(csv_path, encoding="utf-8", on_bad_lines="skip")
         if set(df.columns) >= {"Item", "Description", "Unit", "Price"}:
@@ -42,20 +44,37 @@ if os.path.exists(csv_path):
         else:
             print(f"⚠️ CSV header mismatch: {df.columns.tolist()}")
     except Exception as e:
-        print(f"⚠️ Error loading CSV: {e}")
-else:
-    print("⚠️ CSV file not found, continuing without pricing")
+        print(f"⚠️ Error reading CSV: {e}")
 
-# ========== PDF Class with UTF-8 support ==========
+# If CSV missing, download from GitHub
+if not os.path.exists(csv_path):
+    print("⚠️ CSV not found locally. Attempting to download from GitHub...")
+    try:
+        url = "https://raw.githubusercontent.com/<YOUR_GITHUB_USERNAME>/photo-scope-app/main/backend/xactimate_ca.csv"
+        r = requests.get(url)
+        if r.status_code == 200:
+            os.makedirs("backend", exist_ok=True)
+            with open(csv_path, "wb") as f:
+                f.write(r.content)
+            print("✅ Downloaded CSV from GitHub.")
+            load_csv()
+        else:
+            print(f"❌ Failed to fetch CSV from GitHub (status {r.status_code})")
+    except Exception as e:
+        print(f"❌ Could not fetch CSV from GitHub: {e}")
+else:
+    load_csv()
+
+# ========= PDF Class with UTF-8 =========
 class PDF(FPDF):
     def __init__(self):
         super().__init__()
         self.set_auto_page_break(auto=True, margin=15)
-        # load DejaVuSans font for full UTF-8 support
+        # load UTF-8 compatible font
         self.add_font("DejaVu", "", os.path.join("backend", "fonts", "DejaVuSans.ttf"), uni=True)
         self.set_font("DejaVu", size=12)
 
-# ========== Endpoints ==========
+# ========= Endpoints =========
 
 @app.post("/upload-inspection")
 async def upload_inspection(
@@ -144,17 +163,17 @@ async def generate_report(job_id: str):
             if img.lower().endswith((".jpg", ".jpeg", ".png")):
                 pdf.image(os.path.join(work_dir, img), w=80)
 
-    # Xactimate line items (first 5 as placeholder)
+    # Xactimate line items
     if xactimate_data:
         pdf.add_page()
         pdf.cell(0, 10, "Xactimate Line Items", ln=True)
         pdf.set_font("DejaVu", size=11)
-        pdf.cell(40, 10, "Code")
-        pdf.cell(90, 10, "Description")
+        pdf.cell(30, 10, "Code")
+        pdf.cell(100, 10, "Description")
         pdf.cell(30, 10, "Price", ln=True)
         for code, item in list(xactimate_data.items())[:5]:
-            pdf.cell(40, 10, code)
-            pdf.cell(90, 10, item["desc"][:40])  # truncate long desc
+            pdf.cell(30, 10, code)
+            pdf.cell(100, 10, item["desc"][:40])
             pdf.cell(30, 10, f"${item['price']:.2f}", ln=True)
 
     pdf.output(report_path)
