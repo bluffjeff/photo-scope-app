@@ -50,7 +50,7 @@ def load_csv():
 if not os.path.exists(csv_path):
     print("⚠️ CSV not found locally. Attempting to download from GitHub...")
     try:
-        url = "https://raw.githubusercontent.com/<YOUR_GITHUB_USERNAME>/photo-scope-app/main/backend/xactimate_ca.csv"
+        url = "https://raw.githubusercontent.com/bluffjeff/photo-scope-app/refs/heads/main/backend/xactimate_ca.csv"
         r = requests.get(url)
         if r.status_code == 200:
             os.makedirs("backend", exist_ok=True)
