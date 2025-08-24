@@ -65,14 +65,24 @@ if not os.path.exists(csv_path):
 else:
     load_csv()
 
-# ========= PDF Class with UTF-8 =========
+# ========= PDF Class with UTF-8 and Fallback =========
 class PDF(FPDF):
     def __init__(self):
         super().__init__()
         self.set_auto_page_break(auto=True, margin=15)
-        # load UTF-8 compatible font
-        self.add_font("DejaVu", "", os.path.join("backend", "fonts", "DejaVuSans.ttf"), uni=True)
-        self.set_font("DejaVu", size=12)
+
+        font_path = os.path.join("backend", "fonts", "DejaVuSans.ttf")
+        try:
+            if os.path.exists(font_path):
+                self.add_font("DejaVu", "", font_path, uni=True)
+                self.set_font("DejaVu", size=12)
+                print("✅ Using DejaVuSans.ttf (UTF-8 support enabled)")
+            else:
+                raise FileNotFoundError
+        except Exception:
+            # fallback to built-in font
+            self.set_font("Arial", size=12)
+            print("⚠️ DejaVuSans.ttf not found, falling back to Arial (limited UTF-8 support)")
 
 # ========= Endpoints =========
 
