@@ -1,6 +1,5 @@
 fastapi
 uvicorn
-fpdf
 pandas
 python-multipart
 google-generativeai
