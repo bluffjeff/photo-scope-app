@@ -131,19 +131,6 @@ function App() {
         <input type="file" multiple accept="image/*" onChange={handleFileChange} />
       </div>
 
-      {files.length > 0 && (
-        <div className="grid grid-cols-3 gap-2 mb-4">
-          {files.map((file, idx) => (
-            <img
-              key={idx}
-              src={URL.createObjectURL(file)}
-              alt="preview"
-              className="w-32 h-32 object-cover border"
-            />
-          ))}
-        </div>
-      )}
-
       {phase === "inspection" ? (
         <button className="bg-blue-500 text-white px-4 py-2 rounded" onClick={uploadInspection}>
           Upload Inspection
