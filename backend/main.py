@@ -50,7 +50,7 @@ def load_csv():
 if not os.path.exists(csv_path):
     print("⚠️ CSV not found locally. Attempting to download from GitHub...")
     try:
-        url = "https://raw.githubusercontent.com/bluffjeff/photo-scope-app/refs/heads/main/backend/xactimate_ca.csv"
+        url = "https://raw.githubusercontent.com/<YOUR_GITHUB_USERNAME>/photo-scope-app/main/backend/xactimate_ca.csv"
         r = requests.get(url)
         if r.status_code == 200:
             os.makedirs("backend", exist_ok=True)
@@ -65,24 +65,33 @@ if not os.path.exists(csv_path):
 else:
     load_csv()
 
-# ========= PDF Class with UTF-8 and Fallback =========
+# ========= PDF Class with Safe Font =========
 class PDF(FPDF):
     def __init__(self):
         super().__init__()
         self.set_auto_page_break(auto=True, margin=15)
 
+        self.has_dejavu = False
         font_path = os.path.join("backend", "fonts", "DejaVuSans.ttf")
+
         try:
             if os.path.exists(font_path):
                 self.add_font("DejaVu", "", font_path, uni=True)
                 self.set_font("DejaVu", size=12)
+                self.has_dejavu = True
                 print("✅ Using DejaVuSans.ttf (UTF-8 support enabled)")
             else:
                 raise FileNotFoundError
-        except Exception:
-            # fallback to built-in font
+        except Exception as e:
             self.set_font("Arial", size=12)
-            print("⚠️ DejaVuSans.ttf not found, falling back to Arial (limited UTF-8 support)")
+            print(f"⚠️ Font fallback: DejaVuSans not loaded ({e}), using Arial")
+
+    def safe_set_font(self, size=12, bold=False):
+        """Use DejaVu if available, otherwise Arial"""
+        if self.has_dejavu:
+            self.set_font("DejaVu", "B" if bold else "", size=size)
+        else:
+            self.set_font("Arial", "B" if bold else "", size=size)
 
 # ========= Endpoints =========
 
@@ -143,13 +152,13 @@ async def generate_report(job_id: str):
     pdf.add_page()
 
     # Title
-    pdf.set_font("DejaVu", size=16)
+    pdf.safe_set_font(size=16, bold=True)
     pdf.cell(0, 10, f"Inspection Report – Job {job_id}", ln=True, align="C")
 
     # Notes
     notes_path = os.path.join(job_dir, "notes.txt")
     if os.path.exists(notes_path):
-        pdf.set_font("DejaVu", size=12)
+        pdf.safe_set_font(size=12)
         pdf.multi_cell(0, 10, f"Inspector Notes:\n{open(notes_path, encoding='utf-8').read()}")
 
     # Scope
@@ -160,6 +169,7 @@ async def generate_report(job_id: str):
     # Inspection photos
     if os.path.exists(insp_dir):
         pdf.add_page()
+        pdf.safe_set_font(size=14, bold=True)
         pdf.cell(0, 10, "Before Photos", ln=True)
         for img in os.listdir(insp_dir):
             if img.lower().endswith((".jpg", ".jpeg", ".png")):
@@ -168,6 +178,7 @@ async def generate_report(job_id: str):
     # Work photos
     if os.path.exists(work_dir):
         pdf.add_page()
+        pdf.safe_set_font(size=14, bold=True)
         pdf.cell(0, 10, "After Photos", ln=True)
         for img in os.listdir(work_dir):
             if img.lower().endswith((".jpg", ".jpeg", ".png")):
@@ -176,8 +187,9 @@ async def generate_report(job_id: str):
     # Xactimate line items
     if xactimate_data:
         pdf.add_page()
+        pdf.safe_set_font(size=14, bold=True)
         pdf.cell(0, 10, "Xactimate Line Items", ln=True)
-        pdf.set_font("DejaVu", size=11)
+        pdf.safe_set_font(size=11)
         pdf.cell(30, 10, "Code")
         pdf.cell(100, 10, "Description")
         pdf.cell(30, 10, "Price", ln=True)
